@@ -34,11 +34,10 @@ class SimSiamHook(Hook):
         """fix lr of predictor by iter."""
         if self.adjust_by_epoch:
             return
-        else:
-            if self.fix_pred_lr:
-                for param_group in runner.optim_wrapper.optimizer.param_groups:
-                    if 'fix_lr' in param_group and param_group['fix_lr']:
-                        param_group['lr'] = self.lr
+        if self.fix_pred_lr:
+            for param_group in runner.optim_wrapper.optimizer.param_groups:
+                if 'fix_lr' in param_group and param_group['fix_lr']:
+                    param_group['lr'] = self.lr
 
     def before_train_epoch(self, runner) -> None:
         """fix lr of predictor by epoch."""

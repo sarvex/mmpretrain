@@ -60,6 +60,4 @@ class VigClsHead(ClsHead):
     def forward(self, feats: Tuple[torch.Tensor]) -> torch.Tensor:
         """The forward process."""
         pre_logits = self.pre_logits(feats)
-        # The final classification head.
-        cls_score = self.fc2(pre_logits)
-        return cls_score
+        return self.fc2(pre_logits)

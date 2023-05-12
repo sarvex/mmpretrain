@@ -273,8 +273,8 @@ class MobileViT(BaseBackbone):
         if isinstance(arch, str):
             arch = arch.lower()
             assert arch in self.arch_settings, \
-                f'Unavailable arch, please choose from ' \
-                f'({set(self.arch_settings)}) or pass a list.'
+                    f'Unavailable arch, please choose from ' \
+                    f'({set(self.arch_settings)}) or pass a list.'
             arch = self.arch_settings[arch]
 
         self.arch = arch
@@ -284,8 +284,8 @@ class MobileViT(BaseBackbone):
         if isinstance(out_indices, int):
             out_indices = [out_indices]
         assert isinstance(out_indices, Sequence), \
-            f'"out_indices" must by a sequence or int, ' \
-            f'get {type(out_indices)} instead.'
+                f'"out_indices" must by a sequence or int, ' \
+                f'get {type(out_indices)} instead.'
         for i, index in enumerate(out_indices):
             if index < 0:
                 out_indices[i] = self.num_stages + index
@@ -315,7 +315,7 @@ class MobileViT(BaseBackbone):
 
         in_channels = stem_channels
         layers = []
-        for i, layer_settings in enumerate(arch):
+        for layer_settings in arch:
             layer_type, settings = layer_settings[0], layer_settings[1:]
             layer, out_channels = _make_layer_func[layer_type](in_channels,
                                                                *settings)
@@ -355,15 +355,15 @@ class MobileViT(BaseBackbone):
             expand_ratio (int): adjusts number of channels of the hidden layer
                 in ``InvertedResidual`` by this amount. Defaults to 4.
         """
-        layer = []
-        layer.append(
+        layer = [
             InvertedResidual(
                 in_channels=in_channels,
                 out_channels=out_channels,
                 stride=stride,
                 expand_ratio=expand_ratio,
                 act_cfg=dict(type='Swish'),
-            ))
+            )
+        ]
         layer.append(
             MobileVitBlock(
                 in_channels=out_channels,

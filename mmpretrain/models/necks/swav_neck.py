@@ -83,11 +83,10 @@ class SwAVNeck(BaseModule):
         """
         avg_out = []
         for _x in x:
-            _x = _x[0]
             if self.with_avg_pool:
+                _x = _x[0]
                 _out = self.avgpool(_x)
                 avg_out.append(_out)
         feat_vec = torch.cat(avg_out)  # [sum(num_crops) * N, C]
         feat_vec = feat_vec.view(feat_vec.size(0), -1)
-        output = self.forward_projection(feat_vec)
-        return output
+        return self.forward_projection(feat_vec)

@@ -70,8 +70,7 @@ class VQKD(BaseModule):
     def get_tokens(self, x: torch.Tensor) -> dict:
         """Get tokens for beit pre-training."""
         _, embed_ind, _ = self.encode(x)
-        output = {}
-        output['token'] = embed_ind.view(x.shape[0], -1)
+        output = {'token': embed_ind.view(x.shape[0], -1)}
         output['input_img'] = x
 
         return output
@@ -260,41 +259,40 @@ class BEiTPretrainViT(BEiTViT):
         if mask is None:
             return super().forward(x)
 
-        else:
-            x, patch_resolution = self.patch_embed(x)
+        x, patch_resolution = self.patch_embed(x)
 
-            # replace the masked visual tokens by mask_token
-            B, L, _ = x.shape
-            mask_token = self.mask_token.expand(B, L, -1)
-            w = mask.flatten(1).unsqueeze(-1).type_as(mask_token)
-            x = x * (1. - w) + mask_token * w
+        # replace the masked visual tokens by mask_token
+        B, L, _ = x.shape
+        mask_token = self.mask_token.expand(B, L, -1)
+        w = mask.flatten(1).unsqueeze(-1).type_as(mask_token)
+        x = x * (1. - w) + mask_token * w
 
-            # stole cls_tokens impl from Phil Wang, thanks
-            cls_tokens = self.cls_token.expand(B, -1, -1)
-            x = torch.cat((cls_tokens, x), dim=1)
-            if self.pos_embed is not None:
-                x = x + resize_pos_embed(
-                    self.pos_embed,
-                    self.patch_resolution,
-                    patch_resolution,
-                    mode=self.interpolate_mode,
-                    num_extra_tokens=self.num_extra_tokens)
-            x = self.drop_after_pos(x)
+        # stole cls_tokens impl from Phil Wang, thanks
+        cls_tokens = self.cls_token.expand(B, -1, -1)
+        x = torch.cat((cls_tokens, x), dim=1)
+        if self.pos_embed is not None:
+            x = x + resize_pos_embed(
+                self.pos_embed,
+                self.patch_resolution,
+                patch_resolution,
+                mode=self.interpolate_mode,
+                num_extra_tokens=self.num_extra_tokens)
+        x = self.drop_after_pos(x)
 
-            self.shared_rel_pos_bias = self.rel_pos_bias().to(
-                mask.device) if self.rel_pos_bias is not None else None
+        self.shared_rel_pos_bias = self.rel_pos_bias().to(
+            mask.device) if self.rel_pos_bias is not None else None
 
-            outs = []
-            for i, layer in enumerate(self.layers):
-                x = layer(x, rel_pos_bias=self.shared_rel_pos_bias)
+        outs = []
+        for i, layer in enumerate(self.layers):
+            x = layer(x, rel_pos_bias=self.shared_rel_pos_bias)
 
-                if i == len(self.layers) - 1 and self.final_norm:
-                    x = self.norm1(x)
+            if i == len(self.layers) - 1 and self.final_norm:
+                x = self.norm1(x)
 
-                if i in self.out_indices:
-                    outs.append(x)
+            if i in self.out_indices:
+                outs.append(x)
 
-            return tuple(outs)
+        return tuple(outs)
 
 
 @MODELS.register_module()
@@ -341,17 +339,11 @@ class BEiT(BaseSelfSupervisor):
             loss = self.head.loss(img_latent[0], target, mask)
 
         if isinstance(loss, torch.Tensor):
-            losses = dict(loss=loss)
-            return losses
+            return dict(loss=loss)
         elif isinstance(loss, Tuple):
             # the loss_1 and loss_2 are general reconstruction loss (patch
             # feature vectors from last layer of backbone) and early state
             # reconstruction loss (patch feature vectors from intermediate
             # layer of backbone)
             loss_1, loss_2 = loss[0], loss[1]
-            losses = dict()
-            # the key with prefix 'loss', like loss_1 and loss_2, will be used
-            # as the final criterion
-            losses['loss_1'] = loss_1
-            losses['loss_2'] = loss_2
-            return losses
+            return {'loss_1': loss_1, 'loss_2': loss_2}

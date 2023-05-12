@@ -237,7 +237,7 @@ class ShuffleNetV1(BaseBackbone):
 
         self.layers = nn.ModuleList()
         for i, num_blocks in enumerate(self.stage_blocks):
-            first_block = True if i == 0 else False
+            first_block = i == 0
             layer = self.make_layer(channels[i], num_blocks, first_block)
             self.layers.append(layer)
 
@@ -267,9 +267,8 @@ class ShuffleNetV1(BaseBackbone):
                     normal_init(m, mean=0, std=1.0 / m.weight.shape[1])
             elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
                 constant_init(m, val=1, bias=0.0001)
-                if isinstance(m, _BatchNorm):
-                    if m.running_mean is not None:
-                        nn.init.constant_(m.running_mean, 0)
+                if isinstance(m, _BatchNorm) and m.running_mean is not None:
+                    nn.init.constant_(m.running_mean, 0)
 
     def make_layer(self, out_channels, num_blocks, first_block=False):
         """Stack ShuffleUnit blocks to make a layer.

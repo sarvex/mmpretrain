@@ -46,10 +46,9 @@ class CLIPGenerator(BaseModule):
         """
         # use the visual branch of CLIP to get the features
         assert self.tokenizer is not None, 'Please check whether the ' \
-            '`self.tokenizer` is initialized correctly.'
+                '`self.tokenizer` is initialized correctly.'
 
-        clip_features = self.tokenizer.encode_image(x)
-        return clip_features
+        return self.tokenizer.encode_image(x)
 
 
 @MODELS.register_module()
@@ -147,27 +146,26 @@ class MILANViT(MAEViT):
         if importance is None:
             return super(MAEViT, self).forward(x)
 
-        else:
-            B = x.shape[0]
-            x = self.patch_embed(x)[0]
-            # add pos embed w/o cls token
-            x = x + self.pos_embed[:, 1:, :]
+        B = x.shape[0]
+        x = self.patch_embed(x)[0]
+        # add pos embed w/o cls token
+        x = x + self.pos_embed[:, 1:, :]
 
-            # masking: length -> length * mask_ratio
-            x, ids_restore, ids_keep, ids_dump = self.attention_masking(
-                x, self.mask_ratio, importance)
+        # masking: length -> length * mask_ratio
+        x, ids_restore, ids_keep, ids_dump = self.attention_masking(
+            x, self.mask_ratio, importance)
 
-            # append cls token
-            cls_token = self.cls_token + self.pos_embed[:, :1, :]
-            cls_tokens = cls_token.expand(B, -1, -1)
-            x = torch.cat((cls_tokens, x), dim=1)
+        # append cls token
+        cls_token = self.cls_token + self.pos_embed[:, :1, :]
+        cls_tokens = cls_token.expand(B, -1, -1)
+        x = torch.cat((cls_tokens, x), dim=1)
 
-            for _, layer in enumerate(self.layers):
-                x = layer(x)
-            # Use final norm
-            x = self.norm1(x)
+        for layer in self.layers:
+            x = layer(x)
+        # Use final norm
+        x = self.norm1(x)
 
-            return x, ids_restore, ids_keep, ids_dump
+        return x, ids_restore, ids_keep, ids_dump
 
 
 @MODELS.register_module()
@@ -202,5 +200,4 @@ class MILAN(BaseSelfSupervisor):
         pred = self.neck(latent, ids_restore, ids_keep, ids_dump)
 
         loss = self.head.loss(pred, clip_feature)
-        losses = dict(loss=loss)
-        return losses
+        return dict(loss=loss)

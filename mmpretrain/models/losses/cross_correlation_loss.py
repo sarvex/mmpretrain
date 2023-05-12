@@ -33,8 +33,7 @@ class CrossCorrelationLoss(BaseModule):
         on_diag = torch.diagonal(cross_correlation_matrix).add_(-1).pow_(
             2).sum()
         off_diag = self.off_diagonal(cross_correlation_matrix).pow_(2).sum()
-        loss = on_diag + self.lambd * off_diag
-        return loss
+        return on_diag + self.lambd * off_diag
 
     def off_diagonal(self, x: torch.Tensor) -> torch.Tensor:
         """Rreturn a flattened view of the off-diagonal elements of a square

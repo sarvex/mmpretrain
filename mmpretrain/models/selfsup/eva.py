@@ -39,5 +39,4 @@ class EVA(BaseSelfSupervisor):
 
         clip_feature = clip_feature[:, 1:, :]
         loss = self.head.loss(pred, clip_feature, mask)
-        losses = dict(loss=loss)
-        return losses
+        return dict(loss=loss)

@@ -67,7 +67,7 @@ class T2TTransformerLayer(BaseModule):
                  init_cfg=None):
         super(T2TTransformerLayer, self).__init__(init_cfg=init_cfg)
 
-        self.v_shortcut = True if input_dims is not None else False
+        self.v_shortcut = input_dims is not None
         input_dims = input_dims or embed_dims
 
         self.ln1 = build_norm_layer(norm_cfg, input_dims)
@@ -94,10 +94,7 @@ class T2TTransformerLayer(BaseModule):
             act_cfg=act_cfg)
 
     def forward(self, x):
-        if self.v_shortcut:
-            x = self.attn(self.ln1(x))
-        else:
-            x = x + self.attn(self.ln1(x))
+        x = self.attn(self.ln1(x)) if self.v_shortcut else x + self.attn(self.ln1(x))
         x = self.ffn(self.ln2(x), identity=x)
         return x
 
@@ -333,17 +330,17 @@ class T2T_ViT(BaseBackbone):
         if isinstance(out_indices, int):
             out_indices = [out_indices]
         assert isinstance(out_indices, Sequence), \
-            f'"out_indices" must be a sequence or int, ' \
-            f'get {type(out_indices)} instead.'
+                f'"out_indices" must be a sequence or int, ' \
+                f'get {type(out_indices)} instead.'
         for i, index in enumerate(out_indices):
             if index < 0:
                 out_indices[i] = num_layers + index
             assert 0 <= out_indices[i] <= num_layers, \
-                f'Invalid out_indices {index}'
+                    f'Invalid out_indices {index}'
         self.out_indices = out_indices
 
         # stochastic depth decay rule
-        dpr = [x for x in np.linspace(0, drop_path_rate, num_layers)]
+        dpr = list(np.linspace(0, drop_path_rate, num_layers))
 
         self.encoder = ModuleList()
         for i in range(num_layers):
@@ -381,7 +378,7 @@ class T2T_ViT(BaseBackbone):
         trunc_normal_(self.cls_token, std=.02)
 
     def _prepare_pos_embed(self, state_dict, prefix, *args, **kwargs):
-        name = prefix + 'pos_embed'
+        name = f'{prefix}pos_embed'
         if name not in state_dict.keys():
             return
 

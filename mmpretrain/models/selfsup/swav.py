@@ -45,5 +45,4 @@ class SwAV(BaseSelfSupervisor):
         output = self.neck(output)
 
         loss = self.head.loss(output)
-        losses = dict(loss=loss)
-        return losses
+        return dict(loss=loss)

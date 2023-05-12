@@ -62,5 +62,4 @@ class MoCoV3Head(BaseModule):
         labels = (torch.arange(batch_size, dtype=torch.long) +
                   batch_size * get_rank()).to(logits.device)
 
-        loss = self.loss_module(logits, labels)
-        return loss
+        return self.loss_module(logits, labels)

@@ -44,6 +44,4 @@ class MixMIMPretrainHead(MAEPretrainHead):
 
         unmix_x_rec = x1_rec * mask + x2_rec.flip(0) * (1 - mask)
 
-        loss_rec = self.loss_module(unmix_x_rec, target)
-
-        return loss_rec
+        return self.loss_module(unmix_x_rec, target)

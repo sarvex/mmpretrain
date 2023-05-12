@@ -70,23 +70,21 @@ def parse_args():
         default=[],
         help='Config options for all config files.')
 
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def create_test_job_batch(commands, model_info, args, port, script_name):
     model_name = model_info.name
     config = Path(model_info.config)
 
-    if model_info.weights is not None:
-        checkpoint = substitute_weights(model_info.weights,
-                                        args.checkpoint_root)
-        if checkpoint is None:
-            logger.warning(f'{model_name}: {checkpoint} not found.')
-            return None
-    else:
+    if model_info.weights is None:
         return None
 
+    checkpoint = substitute_weights(model_info.weights,
+                                    args.checkpoint_root)
+    if checkpoint is None:
+        logger.warning(f'{model_name}: {checkpoint} not found.')
+        return None
     job_name = f'{args.job_name}_{model_name}'
     work_dir = Path(args.work_dir) / model_name
     work_dir.mkdir(parents=True, exist_ok=True)
@@ -181,34 +179,33 @@ def test(models, args):
 
 def save_summary(summary_data, work_dir):
     summary_path = work_dir / 'test_benchmark_summary.csv'
-    file = open(summary_path, 'w')
-    columns = defaultdict(list)
-    for model_name, summary in summary_data.items():
-        if len(summary) == 0:
-            # Skip models without results
-            continue
-        columns['Name'].append(model_name)
+    with open(summary_path, 'w') as file:
+        columns = defaultdict(list)
+        for model_name, summary in summary_data.items():
+            if len(summary) == 0:
+                # Skip models without results
+                continue
+            columns['Name'].append(model_name)
 
-        for metric_key in METRICS_MAP:
-            if metric_key in summary:
-                metric = summary[metric_key]
-                expect = round(metric['expect'], 2)
-                result = round(metric['result'], 2)
-                columns[f'{metric_key} (expect)'].append(str(expect))
-                columns[f'{metric_key}'].append(str(result))
-            else:
-                columns[f'{metric_key} (expect)'].append('')
-                columns[f'{metric_key}'].append('')
+            for metric_key in METRICS_MAP:
+                if metric_key in summary:
+                    metric = summary[metric_key]
+                    expect = round(metric['expect'], 2)
+                    result = round(metric['result'], 2)
+                    columns[f'{metric_key} (expect)'].append(str(expect))
+                    columns[f'{metric_key}'].append(str(result))
+                else:
+                    columns[f'{metric_key} (expect)'].append('')
+                    columns[f'{metric_key}'].append('')
 
-    columns = {
-        field: column
-        for field, column in columns.items() if ''.join(column)
-    }
-    file.write(','.join(columns.keys()) + '\n')
-    for row in zip(*columns.values()):
-        file.write(','.join(row) + '\n')
-    file.close()
-    logger.info('Summary file saved at ' + str(summary_path))
+        columns = {
+            field: column
+            for field, column in columns.items() if ''.join(column)
+        }
+        file.write(','.join(columns.keys()) + '\n')
+        for row in zip(*columns.values()):
+            file.write(','.join(row) + '\n')
+    logger.info(f'Summary file saved at {str(summary_path)}')
 
 
 def show_summary(summary_data):
@@ -300,11 +297,11 @@ def main():
     if args.models:
         filter_models = {}
         for pattern in args.models:
-            filter_models.update({
+            filter_models |= {
                 name: models[name]
-                for name in fnmatch.filter(models, pattern + '*')
-            })
-        if len(filter_models) == 0:
+                for name in fnmatch.filter(models, f'{pattern}*')
+            }
+        if not filter_models:
             logger.error('No model found, please specify models in:\n' +
                          '\n'.join(models.keys()))
             return

@@ -19,10 +19,7 @@ __all__ = [
 
 
 def rm_suffix(s, suffix=None):
-    if suffix is None:
-        return s[:s.rfind('.')]
-    else:
-        return s[:s.rfind(suffix)]
+    return s[:s.rfind('.')] if suffix is None else s[:s.rfind(suffix)]
 
 
 def calculate_md5(fpath: str, chunk_size: int = 1024 * 1024):
@@ -45,9 +42,7 @@ def check_md5(fpath, md5, **kwargs):
 def check_integrity(fpath, md5=None):
     if not os.path.isfile(fpath):
         return False
-    if md5 is None:
-        return True
-    return check_md5(fpath, md5)
+    return True if md5 is None else check_md5(fpath, md5)
 
 
 def download_url_to_file(url, dst, hash_prefix=None, progress=True):
@@ -108,8 +103,8 @@ def download_url_to_file(url, dst, hash_prefix=None, progress=True):
             digest = sha256.hexdigest()
             if digest[:len(hash_prefix)] != hash_prefix:
                 raise RuntimeError(
-                    'invalid hash value (expected "{}", got "{}")'.format(
-                        hash_prefix, digest))
+                    f'invalid hash value (expected "{hash_prefix}", got "{digest}")'
+                )
         shutil.move(f.name, dst)
     finally:
         f.close()
@@ -142,13 +137,12 @@ def download_url(url, root, filename=None, md5=None):
             print(f'Downloading {url} to {fpath}')
             download_url_to_file(url, fpath)
         except (urllib.error.URLError, IOError) as e:
-            if url[:5] == 'https':
-                url = url.replace('https:', 'http:')
-                print('Failed download. Trying https -> http instead.'
-                      f' Downloading {url} to {fpath}')
-                download_url_to_file(url, fpath)
-            else:
+            if url[:5] != 'https':
                 raise e
+            url = url.replace('https:', 'http:')
+            print('Failed download. Trying https -> http instead.'
+                  f' Downloading {url} to {fpath}')
+            download_url_to_file(url, fpath)
         # check integrity of downloaded file
         if not check_integrity(fpath, md5):
             raise RuntimeError('File not found or corrupted.')

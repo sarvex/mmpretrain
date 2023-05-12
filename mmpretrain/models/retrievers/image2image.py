@@ -147,12 +147,12 @@ class ImageToImageRetriever(BaseRetriever):
               :obj:`mmpretrain.structures.DataSample`.
             - If ``mode="loss"``, return a dict of tensor.
         """
-        if mode == 'tensor':
-            return self.extract_feat(inputs)
-        elif mode == 'loss':
+        if mode == 'loss':
             return self.loss(inputs, data_samples)
         elif mode == 'predict':
             return self.predict(inputs, data_samples)
+        elif mode == 'tensor':
+            return self.extract_feat(inputs)
         else:
             raise RuntimeError(f'Invalid mode "{mode}".')
 
@@ -166,8 +166,7 @@ class ImageToImageRetriever(BaseRetriever):
             Tensor: The output of encoder.
         """
 
-        feat = self.image_encoder(inputs)
-        return feat
+        return self.image_encoder(inputs)
 
     def loss(self, inputs: torch.Tensor,
              data_samples: List[DataSample]) -> dict:
@@ -195,9 +194,7 @@ class ImageToImageRetriever(BaseRetriever):
         """
         sim = self.similarity_fn(inputs, self.prototype_vecs)
         sorted_sim, indices = torch.sort(sim, descending=True, dim=-1)
-        predictions = dict(
-            score=sim, pred_label=indices, pred_score=sorted_sim)
-        return predictions
+        return dict(score=sim, pred_label=indices, pred_score=sorted_sim)
 
     def predict(self,
                 inputs: tuple,
@@ -239,10 +236,10 @@ class ImageToImageRetriever(BaseRetriever):
                                                  pred_labels):
                 data_sample.set_pred_score(score).set_pred_label(label)
         else:
-            data_samples = []
-            for score, label in zip(pred_scores, pred_labels):
-                data_samples.append(
-                    DataSample().set_pred_score(score).set_pred_label(label))
+            data_samples = [
+                DataSample().set_pred_score(score).set_pred_label(label)
+                for score, label in zip(pred_scores, pred_labels)
+            ]
         return data_samples
 
     def _get_prototype_vecs_from_dataloader(self, data_loader):

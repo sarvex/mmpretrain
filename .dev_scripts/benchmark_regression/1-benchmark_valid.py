@@ -77,8 +77,7 @@ def parse_args():
         'It also allows nested list/tuple values, e.g. key="[(a,b),(c,d)]" '
         'Note that the quotation marks are necessary and that no white space '
         'is allowed.')
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def inference(metainfo, checkpoint, work_dir, args, exp_name=None):
@@ -167,10 +166,9 @@ def show_summary(summary_data, args):
         table.add_column('Params', justify='right', width=11)
 
     for model_name, summary in summary_data.items():
-        row = [model_name]
         valid = summary['valid']
         color = {'PASS': 'green', 'CUDA OOM': 'yellow'}.get(valid, 'red')
-        row.append(f'[{color}]{valid}[/{color}]')
+        row = [model_name, f'[{color}]{valid}[/{color}]']
         if valid == 'PASS':
             row.append(str(summary['resolution']))
             if args.inference_time:
@@ -191,7 +189,7 @@ def main(args):
         models = set()
         for pattern in args.models:
             models.update(list_models(pattern=pattern))
-        if len(models) == 0:
+        if not models:
             print('No model found, please specify models in:')
             print('\n'.join(list_models()))
             return

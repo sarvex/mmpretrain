@@ -135,11 +135,11 @@ def attention_pool(x: torch.Tensor,
             Defaults to None.
     """
     ndim = x.ndim
-    if ndim == 4:
-        B, num_heads, L, C = x.shape
-    elif ndim == 3:
+    if ndim == 3:
         num_heads = 1
         B, L, C = x.shape
+    elif ndim == 4:
+        B, num_heads, L, C = x.shape
     else:
         raise RuntimeError(f'Unsupported input dimension {x.shape}')
 
@@ -379,11 +379,7 @@ class MultiScaleBlock(BaseModule):
             out_channels=out_dims,
             act_cfg=act_cfg)
 
-        if in_dims != out_dims:
-            self.proj = nn.Linear(in_dims, out_dims)
-        else:
-            self.proj = None
-
+        self.proj = nn.Linear(in_dims, out_dims) if in_dims != out_dims else None
         if stride_q > 1:
             kernel_skip = stride_q + 1
             padding_skip = int(kernel_skip // 2)
@@ -556,14 +552,14 @@ class MViT(BaseBackbone):
         if isinstance(arch, str):
             arch = arch.lower()
             assert arch in set(self.arch_zoo), \
-                f'Arch {arch} is not in default archs {set(self.arch_zoo)}'
+                    f'Arch {arch} is not in default archs {set(self.arch_zoo)}'
             self.arch_settings = self.arch_zoo[arch]
         else:
             essential_keys = {
                 'embed_dims', 'num_layers', 'num_heads', 'downscale_indices'
             }
             assert isinstance(arch, dict) and essential_keys <= set(arch), \
-                f'Custom arch needs a dict with keys {essential_keys}'
+                    f'Custom arch needs a dict with keys {essential_keys}'
             self.arch_settings = arch
 
         self.embed_dims = self.arch_settings['embed_dims']
@@ -582,13 +578,13 @@ class MViT(BaseBackbone):
         if isinstance(out_scales, int):
             out_scales = [out_scales]
         assert isinstance(out_scales, Sequence), \
-            f'"out_scales" must by a sequence or int, ' \
-            f'get {type(out_scales)} instead.'
+                f'"out_scales" must by a sequence or int, ' \
+                f'get {type(out_scales)} instead.'
         for i, index in enumerate(out_scales):
             if index < 0:
                 out_scales[i] = self.num_scales + index
             assert 0 <= out_scales[i] <= self.num_scales, \
-                f'Invalid out_scales {index}'
+                    f'Invalid out_scales {index}'
         self.out_scales = sorted(list(out_scales))
 
         # Set patch embedding
@@ -598,7 +594,7 @@ class MViT(BaseBackbone):
             embed_dims=self.embed_dims,
             conv_type='Conv2d',
         )
-        _patch_cfg.update(patch_cfg)
+        _patch_cfg |= patch_cfg
         self.patch_embed = PatchEmbed(**_patch_cfg)
         self.patch_resolution = self.patch_embed.init_out_size
 

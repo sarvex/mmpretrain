@@ -86,9 +86,10 @@ ipu_model_cfg = dict(
         dict(layer_to_call='backbone.patch_embed', ipu_id=0),
         dict(layer_to_call='backbone.layers.3', ipu_id=1),
         dict(layer_to_call='backbone.layers.6', ipu_id=2),
-        dict(layer_to_call='backbone.layers.9', ipu_id=3)
+        dict(layer_to_call='backbone.layers.9', ipu_id=3),
     ],
-    train_ckpt_nodes=['backbone.layers.{}'.format(i) for i in range(12)])
+    train_ckpt_nodes=[f'backbone.layers.{i}' for i in range(12)],
+)
 
 # device config
 options_cfg = dict(

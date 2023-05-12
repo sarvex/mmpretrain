@@ -133,5 +133,4 @@ class MoCo(BaseSelfSupervisor):
         # update the queue
         self._dequeue_and_enqueue(k)
 
-        losses = dict(loss=loss)
-        return losses
+        return dict(loss=loss)

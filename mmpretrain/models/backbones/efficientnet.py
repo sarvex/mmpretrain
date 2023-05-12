@@ -99,10 +99,7 @@ class EdgeResidual(BaseModule):
 
             out = self.conv2(out)
 
-            if self.with_residual:
-                return x + self.drop_path(out)
-            else:
-                return out
+            return x + self.drop_path(out) if self.with_residual else out
 
         if self.with_cp and x.requires_grad:
             out = cp.checkpoint(_inner_forward, x)
@@ -125,13 +122,16 @@ def model_scaling(layer_setting, arch_setting):
     split_layer_setting = [new_layer_setting[0]]
     for layer_cfg in new_layer_setting[1:-1]:
         tmp_index = [0]
-        for i in range(len(layer_cfg) - 1):
-            if layer_cfg[i + 1][1] != layer_cfg[i][1]:
-                tmp_index.append(i + 1)
+        tmp_index.extend(
+            i + 1
+            for i in range(len(layer_cfg) - 1)
+            if layer_cfg[i + 1][1] != layer_cfg[i][1]
+        )
         tmp_index.append(len(layer_cfg))
-        for i in range(len(tmp_index) - 1):
-            split_layer_setting.append(layer_cfg[tmp_index[i]:tmp_index[i +
-                                                                        1]])
+        split_layer_setting.extend(
+            layer_cfg[tmp_index[i] : tmp_index[i + 1]]
+            for i in range(len(tmp_index) - 1)
+        )
     split_layer_setting.append(new_layer_setting[-1])
 
     num_of_layers = [len(layer_cfg) for layer_cfg in split_layer_setting[1:-1]]
@@ -329,7 +329,7 @@ class EfficientNet(BaseBackbone):
         # Without the first and the final conv block.
         layer_setting = self.layer_setting[1:-1]
 
-        total_num_blocks = sum([len(x) for x in layer_setting])
+        total_num_blocks = sum(len(x) for x in layer_setting)
         block_idx = 0
         dpr = [
             x.item()

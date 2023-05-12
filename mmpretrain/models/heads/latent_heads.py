@@ -46,9 +46,7 @@ class LatentPredictHead(BaseModule):
         pred = self.predictor([input])[0]
         target = target.detach()
 
-        loss = self.loss_module(pred, target)
-
-        return loss
+        return self.loss_module(pred, target)
 
 
 @MODELS.register_module()
@@ -90,5 +88,4 @@ class LatentCrossCorrelationHead(BaseModule):
 
         all_reduce(cross_correlation_matrix)
 
-        loss = self.loss_module(cross_correlation_matrix)
-        return loss
+        return self.loss_module(cross_correlation_matrix)

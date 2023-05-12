@@ -152,7 +152,7 @@ class MixMIMPretrainTransformer(MixMIMTransformer):
         # use a shared mask for a batch images
         mask = torch.zeros([1, 1, seq_l], device=x.device)
 
-        mask_ratio = mask_ratio + random.uniform(0.0, self.range_mask_ratio)
+        mask_ratio += random.uniform(0.0, self.range_mask_ratio)
         noise = torch.rand(1, 1, seq_l, device=x.device)  # noise in [0, 1]
         # ascend: small is keep, large is removed
         mask_idx = torch.argsort(noise, dim=2)[:, :, :int(seq_l * mask_ratio)]
@@ -188,32 +188,31 @@ class MixMIMPretrainTransformer(MixMIMTransformer):
                 B x L x C.
               - mask_s4 (torch.Tensor): the mask tensor for the last layer.
         """
-        if mask is None or False:
+        if mask is None:
             return super().forward(x)
 
-        else:
-            mask_s1, mask_s2, mask_s3, mask_s4 = self.random_masking(
-                x, self.mask_ratio)
+        mask_s1, mask_s2, mask_s3, mask_s4 = self.random_masking(
+            x, self.mask_ratio)
 
-            x, _ = self.patch_embed(x)
+        x, _ = self.patch_embed(x)
 
-            x = x * (1. - mask_s1) + x.flip(0) * mask_s1
-            x = x + self.absolute_pos_embed
-            x = self.drop_after_pos(x)
+        x = x * (1. - mask_s1) + x.flip(0) * mask_s1
+        x = x + self.absolute_pos_embed
+        x = self.drop_after_pos(x)
 
-            for idx, layer in enumerate(self.layers):
-                if idx == 0:
-                    x = layer(x, attn_mask=mask_s1)
-                elif idx == 1:
-                    x = layer(x, attn_mask=mask_s2)
-                elif idx == 2:
-                    x = layer(x, attn_mask=mask_s3)
-                elif idx == 3:
-                    x = layer(x, attn_mask=mask_s4)
+        for idx, layer in enumerate(self.layers):
+            if idx == 0:
+                x = layer(x, attn_mask=mask_s1)
+            elif idx == 1:
+                x = layer(x, attn_mask=mask_s2)
+            elif idx == 2:
+                x = layer(x, attn_mask=mask_s3)
+            elif idx == 3:
+                x = layer(x, attn_mask=mask_s4)
 
-            x = self.norm(x)
+        x = self.norm(x)
 
-            return x, mask_s4
+        return x, mask_s4
 
 
 @MODELS.register_module()
@@ -259,5 +258,4 @@ class MixMIM(BaseSelfSupervisor):
         latent, mask = self.backbone(inputs)
         x_rec = self.neck(latent, mask)
         loss = self.head.loss(x_rec, inputs, mask)
-        losses = dict(loss=loss)
-        return losses
+        return dict(loss=loss)

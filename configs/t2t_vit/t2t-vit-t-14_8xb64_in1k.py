@@ -37,8 +37,8 @@ param_scheduler = [
 ]
 
 train_cfg = dict(by_epoch=True, max_epochs=310, val_interval=1)
-val_cfg = dict()
-test_cfg = dict()
+val_cfg = {}
+test_cfg = {}
 
 # runtime settings
 custom_hooks = [dict(type='EMAHook', momentum=4e-5, priority='ABOVE_NORMAL')]

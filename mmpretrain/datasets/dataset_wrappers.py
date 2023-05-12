@@ -146,7 +146,7 @@ class KFoldDataset:
         Returns:
             str: Formatted string.
         """
-        head = 'Dataset ' + self.__class__.__name__
+        head = f'Dataset {self.__class__.__name__}'
         body = []
         type_ = 'test' if self.test_mode else 'training'
         body.append(f'Type: \t{type_}')

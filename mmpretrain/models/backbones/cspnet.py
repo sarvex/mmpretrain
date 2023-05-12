@@ -84,10 +84,7 @@ class DarknetBottleneck(BaseModule):
         out = self.conv2(out)
         out = self.drop_path(out)
 
-        if self.add_identity:
-            return out + identity
-        else:
-            return out
+        return out + identity if self.add_identity else out
 
 
 class CSPStage(BaseModule):
@@ -492,14 +489,14 @@ class CSPDarkNet(CSPNet):
         """using a stride=1 conv as the stem in CSPDarknet."""
         # `stem_channels` equals to the `in_channels` in the first stage.
         stem_channels = self.arch['in_channels'][0]
-        stem = ConvModule(
+        return ConvModule(
             in_channels=in_channels,
             out_channels=stem_channels,
             kernel_size=3,
             padding=1,
             norm_cfg=self.norm_cfg,
-            act_cfg=self.act_cfg)
-        return stem
+            act_cfg=self.act_cfg,
+        )
 
 
 @MODELS.register_module()
@@ -580,8 +577,8 @@ class CSPResNet(CSPNet):
     def _make_stem_layer(self, in_channels):
         # `stem_channels` equals to the `in_channels` in the first stage.
         stem_channels = self.arch['in_channels'][0]
-        if self.deep_stem:
-            stem = nn.Sequential(
+        return (
+            nn.Sequential(
                 ConvModule(
                     in_channels,
                     stem_channels // 2,
@@ -590,7 +587,8 @@ class CSPResNet(CSPNet):
                     padding=1,
                     conv_cfg=self.conv_cfg,
                     norm_cfg=self.norm_cfg,
-                    act_cfg=self.act_cfg),
+                    act_cfg=self.act_cfg,
+                ),
                 ConvModule(
                     stem_channels // 2,
                     stem_channels // 2,
@@ -599,7 +597,8 @@ class CSPResNet(CSPNet):
                     padding=1,
                     conv_cfg=self.conv_cfg,
                     norm_cfg=self.norm_cfg,
-                    act_cfg=self.act_cfg),
+                    act_cfg=self.act_cfg,
+                ),
                 ConvModule(
                     stem_channels // 2,
                     stem_channels,
@@ -608,9 +607,11 @@ class CSPResNet(CSPNet):
                     padding=1,
                     conv_cfg=self.conv_cfg,
                     norm_cfg=self.norm_cfg,
-                    act_cfg=self.act_cfg))
-        else:
-            stem = nn.Sequential(
+                    act_cfg=self.act_cfg,
+                ),
+            )
+            if self.deep_stem
+            else nn.Sequential(
                 ConvModule(
                     in_channels,
                     stem_channels,
@@ -619,9 +620,11 @@ class CSPResNet(CSPNet):
                     padding=3,
                     conv_cfg=self.conv_cfg,
                     norm_cfg=self.norm_cfg,
-                    act_cfg=self.act_cfg),
-                nn.MaxPool2d(kernel_size=3, stride=2, padding=1))
-        return stem
+                    act_cfg=self.act_cfg,
+                ),
+                nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
+            )
+        )
 
 
 @MODELS.register_module()

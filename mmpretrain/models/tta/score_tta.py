@@ -23,10 +23,10 @@ class AverageClsScoreTTA(BaseTTAModel):
         Returns:
             List[DataSample]: Merged prediction.
         """
-        merged_data_samples = []
-        for data_samples in data_samples_list:
-            merged_data_samples.append(self._merge_single_sample(data_samples))
-        return merged_data_samples
+        return [
+            self._merge_single_sample(data_samples)
+            for data_samples in data_samples_list
+        ]
 
     def _merge_single_sample(self, data_samples):
         merged_data_sample: DataSample = data_samples[0].new()

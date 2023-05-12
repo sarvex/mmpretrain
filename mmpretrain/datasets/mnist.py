@@ -85,14 +85,10 @@ class MNIST(BaseDataset):
 
         dist.barrier()
         assert self._check_exists(), \
-            'Download failed or shared storage is unavailable. Please ' \
-            f'download the dataset manually through {self.url_prefix}.'
+                'Download failed or shared storage is unavailable. Please ' \
+                f'download the dataset manually through {self.url_prefix}.'
 
-        if not self.test_mode:
-            file_list = self.train_list
-        else:
-            file_list = self.test_list
-
+        file_list = self.train_list if not self.test_mode else self.test_list
         # load data from SN3 files
         imgs = read_image_file(join_path(root, rm_suffix(file_list[0][0])))
         gt_labels = read_label_file(
@@ -128,8 +124,7 @@ class MNIST(BaseDataset):
 
     def extra_repr(self) -> List[str]:
         """The extra repr information of the dataset."""
-        body = [f"Prefix of data: \t{self.data_prefix['root']}"]
-        return body
+        return [f"Prefix of data: \t{self.data_prefix['root']}"]
 
 
 @DATASETS.register_module()
@@ -190,7 +185,7 @@ def read_sn3_pascalvincent_tensor(path: str,
     with open_maybe_compressed_file(path) as f:
         data = f.read()
     # parse
-    magic = get_int(data[0:4])
+    magic = get_int(data[:4])
     nd = magic % 256
     ty = magic // 256
     assert nd >= 1 and nd <= 3

@@ -94,7 +94,7 @@ class CUB(BaseDataset):
         """load data from CUB txt file, the every line of the file is idx and a
         data item."""
         pairs = list_from_file(filepath)
-        data_dict = dict()
+        data_dict = {}
         for pair in pairs:
             idx, data_item = pair.split()
             # all the index starts from 1 in CUB files,
@@ -133,7 +133,6 @@ class CUB(BaseDataset):
 
     def extra_repr(self) -> List[str]:
         """The extra repr information of the dataset."""
-        body = [
+        return [
             f'Root of dataset: \t{self.data_root}',
         ]
-        return body

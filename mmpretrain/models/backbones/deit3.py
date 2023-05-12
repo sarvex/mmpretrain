@@ -62,7 +62,7 @@ class DeiT3FFN(BaseModule):
                  **kwargs):
         super().__init__(init_cfg)
         assert num_fcs >= 2, 'num_fcs should be no less ' \
-            f'than 2. got {num_fcs}.'
+                f'than 2. got {num_fcs}.'
         self.embed_dims = embed_dims
         self.feedforward_channels = feedforward_channels
         self.num_fcs = num_fcs
@@ -77,17 +77,13 @@ class DeiT3FFN(BaseModule):
                     Linear(in_channels, feedforward_channels), self.activate,
                     nn.Dropout(ffn_drop)))
             in_channels = feedforward_channels
-        layers.append(Linear(feedforward_channels, embed_dims))
-        layers.append(nn.Dropout(ffn_drop))
+        layers.extend((Linear(feedforward_channels, embed_dims), nn.Dropout(ffn_drop)))
         self.layers = Sequential(*layers)
         self.dropout_layer = build_dropout(
             dropout_layer) if dropout_layer else torch.nn.Identity()
         self.add_identity = add_identity
 
-        if use_layer_scale:
-            self.gamma2 = LayerScale(embed_dims)
-        else:
-            self.gamma2 = nn.Identity()
+        self.gamma2 = LayerScale(embed_dims) if use_layer_scale else nn.Identity()
 
     @deprecated_api_warning({'residual': 'identity'}, cls_name='FFN')
     def forward(self, x, identity=None):
@@ -311,14 +307,14 @@ class DeiT3(VisionTransformer):
         if isinstance(arch, str):
             arch = arch.lower()
             assert arch in set(self.arch_zoo), \
-                f'Arch {arch} is not in default archs {set(self.arch_zoo)}'
+                    f'Arch {arch} is not in default archs {set(self.arch_zoo)}'
             self.arch_settings = self.arch_zoo[arch]
         else:
             essential_keys = {
                 'embed_dims', 'num_layers', 'num_heads', 'feedforward_channels'
             }
             assert isinstance(arch, dict) and essential_keys <= set(arch), \
-                f'Custom arch needs a dict with keys {essential_keys}'
+                    f'Custom arch needs a dict with keys {essential_keys}'
             self.arch_settings = arch
 
         self.embed_dims = self.arch_settings['embed_dims']
@@ -334,7 +330,7 @@ class DeiT3(VisionTransformer):
             kernel_size=patch_size,
             stride=patch_size,
         )
-        _patch_cfg.update(patch_cfg)
+        _patch_cfg |= patch_cfg
         self.patch_embed = PatchEmbed(**_patch_cfg)
         self.patch_resolution = self.patch_embed.init_out_size
         num_patches = self.patch_resolution[0] * self.patch_resolution[1]
@@ -366,13 +362,13 @@ class DeiT3(VisionTransformer):
         if isinstance(out_indices, int):
             out_indices = [out_indices]
         assert isinstance(out_indices, Sequence), \
-            f'"out_indices" must by a sequence or int, ' \
-            f'get {type(out_indices)} instead.'
+                f'"out_indices" must by a sequence or int, ' \
+                f'get {type(out_indices)} instead.'
         for i, index in enumerate(out_indices):
             if index < 0:
                 out_indices[i] = self.num_layers + index
             assert 0 <= out_indices[i] <= self.num_layers, \
-                f'Invalid out_indices {index}'
+                    f'Invalid out_indices {index}'
         self.out_indices = out_indices
 
         # stochastic depth decay rule
@@ -392,7 +388,7 @@ class DeiT3(VisionTransformer):
                 qkv_bias=qkv_bias,
                 norm_cfg=norm_cfg,
                 use_layer_scale=use_layer_scale)
-            _layer_cfg.update(layer_cfgs[i])
+            _layer_cfg |= layer_cfgs[i]
             self.layers.append(DeiT3TransformerEncoderLayer(**_layer_cfg))
 
         self.final_norm = final_norm
@@ -429,7 +425,7 @@ class DeiT3(VisionTransformer):
         return tuple(outs)
 
     def _prepare_pos_embed(self, state_dict, prefix, *args, **kwargs):
-        name = prefix + 'pos_embed'
+        name = f'{prefix}pos_embed'
         if name not in state_dict.keys():
             return
 

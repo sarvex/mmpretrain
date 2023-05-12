@@ -47,8 +47,8 @@ param_scheduler = dict(
 )
 
 train_cfg = dict(by_epoch=True, max_epochs=5, val_interval=1)  # train 5 epochs
-val_cfg = dict()
-test_cfg = dict()
+val_cfg = {}
+test_cfg = {}
 
 # runtime settings
 default_scope = 'mmpretrain'

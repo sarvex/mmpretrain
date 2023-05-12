@@ -59,8 +59,7 @@ class SwAVHook(Hook):
     def before_run(self, runner) -> None:
         """Check whether the queues exist locally or not."""
         if is_distributed():
-            self.queue_path = osp.join(runner.work_dir,
-                                       'queue' + str(get_rank()) + '.pth')
+            self.queue_path = osp.join(runner.work_dir, f'queue{str(get_rank())}.pth')
         else:
             self.queue_path = osp.join(runner.work_dir, 'queue.pth')
 

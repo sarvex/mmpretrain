@@ -399,8 +399,7 @@ class RepLKNetStage(BaseModule):
                 internal_channels=int(channels * ffn_ratio),
                 out_channels=channels,
                 drop_path=block_drop_path)
-            blks.append(replk_block)
-            blks.append(convffn_block)
+            blks.extend((replk_block, convffn_block))
         self.blocks = nn.ModuleList(blks)
         if norm_intermediate_features:
             self.norm = build_norm_layer(norm_cfg, channels)[1]
@@ -409,10 +408,7 @@ class RepLKNetStage(BaseModule):
 
     def forward(self, x):
         for blk in self.blocks:
-            if self.with_cp:
-                x = checkpoint.checkpoint(blk, x)  # Save training memory
-            else:
-                x = blk(x)
+            x = checkpoint.checkpoint(blk, x) if self.with_cp else blk(x)
         return x
 
 
@@ -621,11 +617,7 @@ class RepLKNet(BaseBackbone):
     def forward_features(self, x):
         x = self.stem[0](x)
         for stem_layer in self.stem[1:]:
-            if self.with_cp:
-                x = checkpoint.checkpoint(stem_layer, x)  # save memory
-            else:
-                x = stem_layer(x)
-
+            x = checkpoint.checkpoint(stem_layer, x) if self.with_cp else stem_layer(x)
         #   Need the intermediate feature maps
         outs = []
         for stage_idx in range(self.num_stages):

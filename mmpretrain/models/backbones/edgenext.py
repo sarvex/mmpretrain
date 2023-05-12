@@ -70,7 +70,7 @@ class SDTAEncoder(BaseModule):
         self.num_convs = scales if scales == 1 else scales - 1
 
         self.conv_modules = ModuleList()
-        for i in range(self.num_convs):
+        for _ in range(self.num_convs):
             self.conv_modules.append(
                 nn.Conv2d(
                     conv_channels,
@@ -107,16 +107,9 @@ class SDTAEncoder(BaseModule):
         shortcut = x
         spx = torch.split(x, self.conv_channels, dim=1)
         for i in range(self.num_convs):
-            if i == 0:
-                sp = spx[i]
-            else:
-                sp = sp + spx[i]
+            sp = spx[i] if i == 0 else sp + spx[i]
             sp = self.conv_modules[i](sp)
-            if i == 0:
-                out = sp
-            else:
-                out = torch.cat((out, sp), 1)
-
+            out = sp if i == 0 else torch.cat((out, sp), 1)
         x = torch.cat((out, spx[self.num_convs]), 1)
 
         # Channel Self-attention

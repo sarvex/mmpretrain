@@ -195,10 +195,7 @@ class SwinBlockSequence(BaseModule):
 
     @property
     def out_channels(self):
-        if self.downsample:
-            return self.downsample.out_channels
-        else:
-            return self.embed_dims
+        return self.downsample.out_channels if self.downsample else self.embed_dims
 
 
 @MODELS.register_module()
@@ -319,12 +316,12 @@ class SwinTransformer(BaseBackbone):
         if isinstance(arch, str):
             arch = arch.lower()
             assert arch in set(self.arch_zoo), \
-                f'Arch {arch} is not in default archs {set(self.arch_zoo)}'
+                    f'Arch {arch} is not in default archs {set(self.arch_zoo)}'
             self.arch_settings = self.arch_zoo[arch]
         else:
             essential_keys = {'embed_dims', 'depths', 'num_heads'}
             assert isinstance(arch, dict) and set(arch) == essential_keys, \
-                f'Custom arch needs a dict with keys {essential_keys}'
+                    f'Custom arch needs a dict with keys {essential_keys}'
             self.arch_settings = arch
 
         self.embed_dims = self.arch_settings['embed_dims']
@@ -346,7 +343,7 @@ class SwinTransformer(BaseBackbone):
             stride=patch_size,
             norm_cfg=dict(type='LN'),
         )
-        _patch_cfg.update(patch_cfg)
+        _patch_cfg |= patch_cfg
         self.patch_embed = PatchEmbed(**_patch_cfg)
         self.patch_resolution = self.patch_embed.init_out_size
 
@@ -377,7 +374,7 @@ class SwinTransformer(BaseBackbone):
                 stage_cfg = stage_cfgs[i]
             else:
                 stage_cfg = deepcopy(stage_cfgs)
-            downsample = True if i < self.num_layers - 1 else False
+            downsample = i < self.num_layers - 1
             _stage_cfg = {
                 'embed_dims': embed_dims[-1],
                 'depth': depth,
@@ -495,7 +492,7 @@ class SwinTransformer(BaseBackbone):
                     m.eval()
 
     def _prepare_abs_pos_embed(self, state_dict, prefix, *args, **kwargs):
-        name = prefix + 'absolute_pos_embed'
+        name = f'{prefix}absolute_pos_embed'
         if name not in state_dict.keys():
             return
 

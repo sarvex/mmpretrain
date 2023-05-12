@@ -70,31 +70,25 @@ class RevBackProp(Function):
         # retrieve params from ctx for backward
         x1, x2, *int_tensors = ctx.saved_tensors
         # no buffering
-        if len(int_tensors) != 0:
-            buffer_layers = int_tensors[0].tolist()
-        else:
-            buffer_layers = []
-
+        buffer_layers = int_tensors[0].tolist() if len(int_tensors) != 0 else []
         layers = ctx.layers
 
-        for _, layer in enumerate(layers[::-1]):
-            if layer.layer_id in buffer_layers:
-                x1, x2, d_x1, d_x2 = layer.backward_pass(
-                    y1=int_tensors[buffer_layers.index(layer.layer_id) * 2 +
-                                   1],
-                    y2=int_tensors[buffer_layers.index(layer.layer_id) * 2 +
-                                   2],
+        for layer in layers[::-1]:
+            x1, x2, d_x1, d_x2 = (
+                layer.backward_pass(
+                    y1=int_tensors[buffer_layers.index(layer.layer_id) * 2 + 1],
+                    y2=int_tensors[buffer_layers.index(layer.layer_id) * 2 + 2],
                     d_y1=d_x1,
                     d_y2=d_x2,
                 )
-            else:
-                x1, x2, d_x1, d_x2 = layer.backward_pass(
+                if layer.layer_id in buffer_layers
+                else layer.backward_pass(
                     y1=x1,
                     y2=x2,
                     d_y1=d_x1,
                     d_y2=d_x2,
                 )
-
+            )
         dx = torch.cat([d_x1, d_x2], dim=-1)
 
         del int_tensors
@@ -462,14 +456,14 @@ class RevVisionTransformer(BaseBackbone):
         if isinstance(arch, str):
             arch = arch.lower()
             assert arch in set(self.arch_zoo), \
-                f'Arch {arch} is not in default archs {set(self.arch_zoo)}'
+                    f'Arch {arch} is not in default archs {set(self.arch_zoo)}'
             self.arch_settings = self.arch_zoo[arch]
         else:
             essential_keys = {
                 'embed_dims', 'num_layers', 'num_heads', 'feedforward_channels'
             }
             assert isinstance(arch, dict) and essential_keys <= set(arch), \
-                f'Custom arch needs a dict with keys {essential_keys}'
+                    f'Custom arch needs a dict with keys {essential_keys}'
             self.arch_settings = arch
 
         self.embed_dims = self.arch_settings['embed_dims']
@@ -486,7 +480,7 @@ class RevVisionTransformer(BaseBackbone):
             kernel_size=patch_size,
             stride=patch_size,
         )
-        _patch_cfg.update(patch_cfg)
+        _patch_cfg |= patch_cfg
         self.patch_embed = PatchEmbed(**_patch_cfg)
         self.patch_resolution = self.patch_embed.init_out_size
         num_patches = self.patch_resolution[0] * self.patch_resolution[1]
@@ -534,7 +528,7 @@ class RevVisionTransformer(BaseBackbone):
                 qkv_bias=qkv_bias,
                 layer_id=i,
                 norm_cfg=norm_cfg)
-            _layer_cfg.update(layer_cfgs[i])
+            _layer_cfg |= layer_cfgs[i]
             self.layers.append(RevTransformerEncoderLayer(**_layer_cfg))
 
         # fusion operation for the final output
@@ -556,7 +550,7 @@ class RevVisionTransformer(BaseBackbone):
             trunc_normal_(self.pos_embed, std=0.02)
 
     def _prepare_pos_embed(self, state_dict, prefix, *args, **kwargs):
-        name = prefix + 'pos_embed'
+        name = f'{prefix}pos_embed'
         if name not in state_dict.keys():
             return
 
@@ -651,7 +645,7 @@ class RevVisionTransformer(BaseBackbone):
         ffn_out, attn_out = torch.chunk(hidden_state, 2, dim=-1)
         del hidden_state
 
-        for _, layer in enumerate(layers):
+        for layer in layers:
             attn_out, ffn_out = layer(attn_out, ffn_out)
 
         return torch.cat([attn_out, ffn_out], dim=-1)

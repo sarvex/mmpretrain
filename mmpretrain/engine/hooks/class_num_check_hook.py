@@ -17,7 +17,6 @@ class ClassNumCheckHook(Hook):
             runner (obj:`Runner`): runner object.
             dataset (obj: `BaseDataset`): the dataset to check.
         """
-        model = runner.model
         if dataset.CLASSES is None:
             runner.logger.warning(
                 f'Please set class information in `metainfo` '
@@ -26,12 +25,13 @@ class ClassNumCheckHook(Hook):
                 f'of head')
         else:
             assert is_seq_of(dataset.CLASSES, str), \
-                (f'Class information in `metainfo` in '
+                    (f'Class information in `metainfo` in '
                  f'{dataset.__class__.__name__} should be a tuple of str.')
+            model = runner.model
             for _, module in model.named_modules():
                 if hasattr(module, 'num_classes'):
                     assert module.num_classes == len(dataset.CLASSES), \
-                        (f'The `num_classes` ({module.num_classes}) in '
+                            (f'The `num_classes` ({module.num_classes}) in '
                          f'{module.__class__.__name__} of '
                          f'{model.__class__.__name__} does not matches '
                          f'the length of class information in `metainfo` '

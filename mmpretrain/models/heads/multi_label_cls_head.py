@@ -83,9 +83,7 @@ class MultiLabelClsHead(BaseModule):
         # The part can be traced by torch.fx
         cls_score = self(feats)
 
-        # The part can not be traced by torch.fx
-        losses = self._get_loss(cls_score, data_samples, **kwargs)
-        return losses
+        return self._get_loss(cls_score, data_samples, **kwargs)
 
     def _get_loss(self, cls_score: torch.Tensor,
                   data_samples: List[DataSample], **kwargs):
@@ -99,13 +97,9 @@ class MultiLabelClsHead(BaseModule):
                 label_to_onehot(i.gt_label, num_classes) for i in data_samples
             ]).float()
 
-        # compute loss
-        losses = dict()
         loss = self.loss_module(
             cls_score, target, avg_factor=cls_score.size(0), **kwargs)
-        losses['loss'] = loss
-
-        return losses
+        return {'loss': loss}
 
     def predict(self,
                 feats: Tuple[torch.Tensor],
@@ -128,9 +122,7 @@ class MultiLabelClsHead(BaseModule):
         # The part can be traced by torch.fx
         cls_score = self(feats)
 
-        # The part can not be traced by torch.fx
-        predictions = self._get_predictions(cls_score, data_samples)
-        return predictions
+        return self._get_predictions(cls_score, data_samples)
 
     def _get_predictions(self, cls_score: torch.Tensor,
                          data_samples: List[DataSample]):

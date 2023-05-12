@@ -61,8 +61,7 @@ class MAEPretrainHead(BaseModule):
 
         x = x.reshape(shape=(x.shape[0], h, w, p, p, 3))
         x = torch.einsum('nhwpqc->nchpwq', x)
-        imgs = x.reshape(shape=(x.shape[0], 3, h * p, h * p))
-        return imgs
+        return x.reshape(shape=(x.shape[0], 3, h * p, h * p))
 
     def construct_target(self, target: torch.Tensor) -> torch.Tensor:
         """Construct the reconstruction target.
@@ -98,6 +97,4 @@ class MAEPretrainHead(BaseModule):
             torch.Tensor: The reconstruction loss.
         """
         target = self.construct_target(target)
-        loss = self.loss_module(pred, target, mask)
-
-        return loss
+        return self.loss_module(pred, target, mask)

@@ -328,8 +328,7 @@ def basic_blocks(in_channels,
                     use_layer_scale=use_layer_scale))
             if index == 3 and layers[index] - block_idx - 1 == vit_num:
                 blocks.append(Flat())
-    blocks = nn.Sequential(*blocks)
-    return blocks
+    return nn.Sequential(*blocks)
 
 
 @MODELS.register_module()
@@ -445,14 +444,14 @@ class EfficientFormer(BaseBackbone):
 
         if isinstance(arch, str):
             assert arch in self.arch_settings, \
-                f'Unavailable arch, please choose from ' \
-                f'({set(self.arch_settings)}) or pass a dict.'
+                    f'Unavailable arch, please choose from ' \
+                    f'({set(self.arch_settings)}) or pass a dict.'
             arch = self.arch_settings[arch]
         elif isinstance(arch, dict):
             default_keys = set(self.arch_settings['l1'].keys())
             assert set(arch.keys()) == default_keys, \
-                f'The arch dict must have {default_keys}, ' \
-                f'but got {list(arch.keys())}.'
+                    f'The arch dict must have {default_keys}, ' \
+                    f'but got {list(arch.keys())}.'
 
         self.layers = arch['layers']
         self.embed_dims = arch['embed_dims']
@@ -466,7 +465,7 @@ class EfficientFormer(BaseBackbone):
         self.reshape_last_feat = reshape_last_feat
 
         assert self.vit_num >= 0, "'vit_num' must be an integer " \
-                                  'greater than or equal to 0.'
+                                      'greater than or equal to 0.'
         assert self.vit_num <= self.layers[-1], (
             "'vit_num' must be an integer smaller than layer number")
 
@@ -475,10 +474,7 @@ class EfficientFormer(BaseBackbone):
         # set the main block in network
         network = []
         for i in range(len(self.layers)):
-            if i != 0:
-                in_channels = self.embed_dims[i - 1]
-            else:
-                in_channels = self.embed_dims[i]
+            in_channels = self.embed_dims[i - 1] if i != 0 else self.embed_dims[i]
             out_channels = self.embed_dims[i]
             stage = basic_blocks(
                 in_channels,
@@ -500,8 +496,8 @@ class EfficientFormer(BaseBackbone):
         if isinstance(out_indices, int):
             out_indices = [out_indices]
         assert isinstance(out_indices, Sequence), \
-            f'"out_indices" must by a sequence or int, ' \
-            f'get {type(out_indices)} instead.'
+                f'"out_indices" must by a sequence or int, ' \
+                f'get {type(out_indices)} instead.'
         for i, index in enumerate(out_indices):
             if index < 0:
                 out_indices[i] = 4 + index
@@ -510,7 +506,7 @@ class EfficientFormer(BaseBackbone):
         self.out_indices = out_indices
         for i_layer in self.out_indices:
             if not self.reshape_last_feat and \
-                    i_layer == 3 and self.vit_num > 0:
+                        i_layer == 3 and self.vit_num > 0:
                 layer = build_norm_layer(
                     dict(type='LN'), self.embed_dims[i_layer])[1]
             else:

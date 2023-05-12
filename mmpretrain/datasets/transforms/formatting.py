@@ -128,7 +128,7 @@ class PackInputs(BaseTransform):
 
     def transform(self, results: dict) -> dict:
         """Method to pack the input data."""
-        packed_results = dict()
+        packed_results = {}
         if self.input_key in results:
             input_ = results[self.input_key]
             packed_results['inputs'] = self.format_input(input_)
@@ -190,7 +190,7 @@ class PackMultiTaskInputs(BaseTransform):
         result = {'img_path': 'a.png', 'gt_label': {'task1': 1, 'task3': 3},
             'img': array([[[  0,   0,   0])
         """
-        packed_results = dict()
+        packed_results = {}
         results = results.copy()
 
         if self.input_key in results:
@@ -327,10 +327,7 @@ class Collect(BaseTransform):
         self.keys = keys
 
     def transform(self, results):
-        data = {}
-        for key in self.keys:
-            data[key] = results[key]
-        return data
+        return {key: results[key] for key in self.keys}
 
     def __repr__(self):
-        return self.__class__.__name__ + f'(keys={self.keys})'
+        return f'{self.__class__.__name__}(keys={self.keys})'

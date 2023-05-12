@@ -21,7 +21,7 @@ def loss_convertor(loss_func, task_name):
             if sample_mask:
                 task_data_samples.append(data_sample.get(task_name))
 
-        if len(task_data_samples) == 0:
+        if not task_data_samples:
             return {'loss': torch.tensor(0.), 'mask_size': torch.tensor(0.)}
 
         # Mask the inputs of the task
@@ -89,7 +89,7 @@ class MultiTaskHead(BaseModule):
             dict[str, Tensor]: a dictionary of loss components, each task loss
                 key will be prefixed by the task_name like "task1_loss"
         """
-        losses = dict()
+        losses = {}
         for task_name, head in self.task_heads.items():
             head_loss = head.loss(feats, data_samples, **kwargs)
             for k, v in head_loss.items():
@@ -113,7 +113,7 @@ class MultiTaskHead(BaseModule):
             List[MultiTaskDataSample]: A list of data samples which contains
             the predicted results.
         """
-        predictions_dict = dict()
+        predictions_dict = {}
 
         for task_name, head in self.task_heads.items():
             task_samples = head.predict(feats)

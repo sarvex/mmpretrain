@@ -41,7 +41,7 @@ def distributed_sinkhorn(out: torch.Tensor, sinkhorn_iterations: int,
     all_reduce(sum_Q)
     Q /= sum_Q
 
-    for it in range(sinkhorn_iterations):
+    for _ in range(sinkhorn_iterations):
         # normalize each row: total weight per prototype must be 1/K
         u = torch.sum(Q, dim=1, keepdim=True)
         if len(torch.nonzero(u == 0)) > 0:
@@ -77,15 +77,11 @@ class MultiPrototypes(BaseModule):
         assert isinstance(num_prototypes, list)
         self.num_heads = len(num_prototypes)
         for i, k in enumerate(num_prototypes):
-            self.add_module('prototypes' + str(i),
-                            nn.Linear(output_dim, k, bias=False))
+            self.add_module(f'prototypes{str(i)}', nn.Linear(output_dim, k, bias=False))
 
     def forward(self, x: torch.Tensor) -> List[torch.Tensor]:
         """Run forward for every prototype."""
-        out = []
-        for i in range(self.num_heads):
-            out.append(getattr(self, 'prototypes' + str(i))(x))
-        return out
+        return [getattr(self, f'prototypes{str(i)}')(x) for i in range(self.num_heads)]
 
 
 @MODELS.register_module()

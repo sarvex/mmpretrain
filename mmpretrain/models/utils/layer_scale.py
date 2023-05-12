@@ -20,8 +20,10 @@ class LayerScale(nn.Module):
                  inplace: bool = False,
                  data_format: str = 'channels_last'):
         super().__init__()
-        assert data_format in ('channels_last', 'channels_first'), \
-            "'data_format' could only be channels_last or channels_first."
+        assert data_format in {
+            'channels_last',
+            'channels_first',
+        }, "'data_format' could only be channels_last or channels_first."
         self.inplace = inplace
         self.data_format = data_format
         self.weight = nn.Parameter(torch.ones(dim) * 1e-5)

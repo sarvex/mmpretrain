@@ -35,7 +35,7 @@ class RangeAction(argparse.Action):
             raise ValueError(f'Unavailable range option {values}')
         symbol, range_str = matches.groups()
         assert range_str in CYCLE_LEVELS, \
-            f'{range_str} are not in {CYCLE_LEVELS}.'
+                f'{range_str} are not in {CYCLE_LEVELS}.'
         level = CYCLE_LEVELS.index(range_str)
         symbol = symbol or '<='
         ranges = set()
@@ -45,7 +45,7 @@ class RangeAction(argparse.Action):
             ranges.update(range(level + 1, len(CYCLE_LEVELS)))
         if '<' in symbol:
             ranges.update(range(level))
-        assert len(ranges) > 0, 'No range are selected.'
+        assert ranges, 'No range are selected.'
         setattr(namespace, self.dest, ranges)
 
 
@@ -107,8 +107,7 @@ def parse_args():
         default=[],
         help='Config options for all config files.')
 
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def get_gpu_number(model_info):
@@ -117,8 +116,7 @@ def get_gpu_number(model_info):
     if matches is None:
         raise ValueError(
             'Cannot get gpu numbers from the config name {config}')
-    gpus = int(matches.groups()[0])
-    return gpus
+    return int(matches.groups()[0])
 
 
 def create_train_job_batch(model_info, args, port, pretrain_info=None):
@@ -238,46 +236,45 @@ def save_summary(summary_data, work_dir):
     zip_file = ZipFile(zip_path, 'w')
 
     summary_path = work_dir / 'benchmark_summary.csv'
-    file = open(summary_path, 'w')
-    columns = defaultdict(list)
-    for model_name, summary in summary_data.items():
-        if len(summary) == 0:
-            # Skip models without results
-            continue
-        columns['Name'].append(model_name)
+    with open(summary_path, 'w') as file:
+        columns = defaultdict(list)
+        for model_name, summary in summary_data.items():
+            if len(summary) == 0:
+                # Skip models without results
+                continue
+            columns['Name'].append(model_name)
 
-        for metric_key in METRICS_MAP:
-            if metric_key in summary:
-                metric = summary[metric_key]
-                expect = str(round(metric['expect'], 2))
-                result = str(round(metric['result'], 2))
-                columns[f'{metric_key} (expect)'].append(expect)
-                columns[f'{metric_key}'].append(result)
-                best = str(round(metric['best'], 2))
-                best_epoch = str(int(metric['best_epoch']))
-                columns[f'{metric_key} (best)'].append(best)
-                columns[f'{metric_key} (best epoch)'].append(best_epoch)
-            else:
-                columns[f'{metric_key} (expect)'].append('')
-                columns[f'{metric_key}'].append('')
-                columns[f'{metric_key} (best)'].append('')
-                columns[f'{metric_key} (best epoch)'].append('')
+            for metric_key in METRICS_MAP:
+                if metric_key in summary:
+                    metric = summary[metric_key]
+                    expect = str(round(metric['expect'], 2))
+                    result = str(round(metric['result'], 2))
+                    columns[f'{metric_key} (expect)'].append(expect)
+                    columns[f'{metric_key}'].append(result)
+                    best = str(round(metric['best'], 2))
+                    best_epoch = str(int(metric['best_epoch']))
+                    columns[f'{metric_key} (best)'].append(best)
+                    columns[f'{metric_key} (best epoch)'].append(best_epoch)
+                else:
+                    columns[f'{metric_key} (expect)'].append('')
+                    columns[f'{metric_key}'].append('')
+                    columns[f'{metric_key} (best)'].append('')
+                    columns[f'{metric_key} (best epoch)'].append('')
 
-        columns['Log'].append(str(summary['log_file'].relative_to(work_dir)))
-        zip_file.write(summary['log_file'])
+            columns['Log'].append(str(summary['log_file'].relative_to(work_dir)))
+            zip_file.write(summary['log_file'])
 
-    columns = {
-        field: column
-        for field, column in columns.items() if ''.join(column)
-    }
-    file.write(','.join(columns.keys()) + '\n')
-    for row in zip(*columns.values()):
-        file.write(','.join(row) + '\n')
-    file.close()
+        columns = {
+            field: column
+            for field, column in columns.items() if ''.join(column)
+        }
+        file.write(','.join(columns.keys()) + '\n')
+        for row in zip(*columns.values()):
+            file.write(','.join(row) + '\n')
     zip_file.write(summary_path)
     zip_file.close()
-    logger.info('Summary file saved at ' + str(summary_path))
-    logger.info('Log files archived at ' + str(zip_path))
+    logger.info(f'Summary file saved at {str(summary_path)}')
+    logger.info(f'Log files archived at {str(zip_path)}')
 
 
 def show_summary(summary_data):
@@ -340,15 +337,14 @@ def summary(models, args):
             downstream_name = model_info.downstream.name
             if downstream_name not in dir_map:
                 continue
-            else:
-                sub_dir = dir_map[downstream_name]
-                model_info = model_info.downstream
+            sub_dir = dir_map[downstream_name]
+            model_info = model_info.downstream
         else:
             # Skip if not found any vis_data folder.
             sub_dir = dir_map[model_name]
 
-        log_files = [f for f in sub_dir.glob('*/vis_data/scalars.json')]
-        if len(log_files) == 0:
+        log_files = list(sub_dir.glob('*/vis_data/scalars.json'))
+        if not log_files:
             continue
         log_file = sorted(log_files)[-1]
 
@@ -358,7 +354,7 @@ def summary(models, args):
             # TODO: need a better method to extract validate log
             val_logs = [log for log in json_logs if 'loss' not in log]
 
-        if len(val_logs) == 0:
+        if not val_logs:
             continue
 
         expect_metrics = model_info.results[0].metrics
@@ -402,10 +398,10 @@ def main():
         train_items = yaml.safe_load(f)
     models = {}
     for item in train_items:
-        name = item['Name']
         cycle = item['Cycle']
         cycle_level = CYCLE_LEVELS.index(cycle)
         if cycle_level in args.range:
+            name = item['Name']
             model_info = all_models[name]
             if 'Downstream' in item:
                 downstream = item['Downstream']
@@ -415,11 +411,11 @@ def main():
     if args.models:
         filter_models = {}
         for pattern in args.models:
-            filter_models.update({
+            filter_models |= {
                 name: models[name]
-                for name in fnmatch.filter(models, pattern + '*')
-            })
-        if len(filter_models) == 0:
+                for name in fnmatch.filter(models, f'{pattern}*')
+            }
+        if not filter_models:
             logger.error('No model found, please specify models in:\n' +
                          '\n'.join(models.keys()))
             return

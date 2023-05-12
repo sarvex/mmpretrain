@@ -198,11 +198,14 @@ class ConvPatchEmbed(BaseModule):
 
         layer = []
         if patch_size == 16:
-            layer.append(
-                conv(in_channels=in_channels, out_channels=embed_dims // 8))
-            layer.append(
-                conv(
-                    in_channels=embed_dims // 8, out_channels=embed_dims // 4))
+            layer.extend(
+                (
+                    conv(in_channels=in_channels, out_channels=embed_dims // 8),
+                    conv(
+                        in_channels=embed_dims // 8, out_channels=embed_dims // 4
+                    ),
+                )
+            )
         elif patch_size == 8:
             layer.append(
                 conv(in_channels=in_channels, out_channels=embed_dims // 4))
@@ -210,15 +213,16 @@ class ConvPatchEmbed(BaseModule):
             raise ValueError('For patch embedding, the patch size must be 16 '
                              f'or 8, but get patch size {self.patch_size}.')
 
-        layer.append(
-            conv(in_channels=embed_dims // 4, out_channels=embed_dims // 2))
-        layer.append(
-            conv(
-                in_channels=embed_dims // 2,
-                out_channels=embed_dims,
-                act_cfg=None,
-            ))
-
+        layer.extend(
+            (
+                conv(in_channels=embed_dims // 4, out_channels=embed_dims // 2),
+                conv(
+                    in_channels=embed_dims // 2,
+                    out_channels=embed_dims,
+                    act_cfg=None,
+                ),
+            )
+        )
         self.proj = Sequential(*layer)
 
     def forward(self, x: torch.Tensor):
@@ -603,7 +607,7 @@ class XCiT(BaseBackbone):
 
         self.embed_dims = embed_dims
 
-        assert out_type in ('raw', 'featmap', 'avg_featmap', 'cls_token')
+        assert out_type in {'raw', 'featmap', 'avg_featmap', 'cls_token'}
         self.out_type = out_type
 
         self.patch_embed = ConvPatchEmbed(
@@ -663,14 +667,14 @@ class XCiT(BaseBackbone):
         if isinstance(out_indices, int):
             out_indices = [out_indices]
         assert isinstance(out_indices, Sequence), \
-            f'"out_indices" must by a sequence or int, ' \
-            f'get {type(out_indices)} instead.'
+                f'"out_indices" must by a sequence or int, ' \
+                f'get {type(out_indices)} instead.'
         out_indices = list(out_indices)
         for i, index in enumerate(out_indices):
             if index < 0:
                 out_indices[i] = self.num_layers + index
             assert 0 <= out_indices[i] <= self.num_layers, \
-                f'Invalid out_indices {index}.'
+                    f'Invalid out_indices {index}.'
         self.out_indices = out_indices
 
         if frozen_stages > self.num_layers + 1:

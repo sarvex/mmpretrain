@@ -63,13 +63,13 @@ class VOC(MultiLabelDataset):
         if isinstance(data_prefix, str):
             data_prefix = dict(img_path=expanduser(data_prefix))
         assert isinstance(data_prefix, dict) and 'img_path' in data_prefix, \
-            '`data_prefix` must be a dict with key img_path'
+                '`data_prefix` must be a dict with key img_path'
 
-        if test_mode is False:
+        if not test_mode:
             assert 'ann_path' in data_prefix and data_prefix[
                 'ann_path'] is not None, \
-                '"ann_path" must be set in `data_prefix` if `test_mode` is' \
-                ' False.'
+                    '"ann_path" must be set in `data_prefix` if `test_mode` is' \
+                    ' False.'
 
         self.data_root = data_root
         self.backend = get_file_backend(data_root, enable_singleton=True)
@@ -86,10 +86,7 @@ class VOC(MultiLabelDataset):
     @property
     def ann_prefix(self):
         """The prefix of images."""
-        if 'ann_path' in self.data_prefix:
-            return self.data_prefix['ann_path']
-        else:
-            return None
+        return self.data_prefix['ann_path'] if 'ann_path' in self.data_prefix else None
 
     def _get_labels_from_xml(self, img_id):
         """Get gt_labels and labels_difficult from xml file."""
@@ -135,11 +132,9 @@ class VOC(MultiLabelDataset):
 
     def extra_repr(self) -> List[str]:
         """The extra repr information of the dataset."""
-        body = [
+        return [
             f'Prefix of dataset: \t{self.data_root}',
             f'Path of image set: \t{self.image_set_path}',
             f'Prefix of images: \t{self.img_prefix}',
-            f'Prefix of annotations: \t{self.ann_prefix}'
+            f'Prefix of annotations: \t{self.ann_prefix}',
         ]
-
-        return body

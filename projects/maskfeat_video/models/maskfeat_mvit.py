@@ -137,10 +137,7 @@ class MaskFeatMViT(MViT):
                 if stage_index in self.out_scales:
                     self.out_patch_resolution.append(patch_resolution)
                     x = getattr(self, f'norm{stage_index}')(x)
-                    if not self.output_cls_token:
-                        out = x[:, 1:]
-                    else:
-                        out = x
+                    out = x[:, 1:] if not self.output_cls_token else x
                     outs.append(out)
 
         return tuple(outs)

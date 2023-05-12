@@ -121,8 +121,8 @@ param_scheduler = [
 ]
 
 train_cfg = dict(by_epoch=True, max_epochs=100, val_interval=10)
-val_cfg = dict()
-test_cfg = dict()
+val_cfg = {}
+test_cfg = {}
 
 default_hooks = dict(
     # save checkpoint per epoch.

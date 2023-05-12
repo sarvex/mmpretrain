@@ -240,8 +240,7 @@ class Subsample(BaseModule):
         # B, N, C -> B, H, W, C
         x = x.view(B, self.resolution, self.resolution, C)
         x = x[:, ::self.stride, ::self.stride]
-        x = x.reshape(B, -1, C)  # B, H', W', C -> B, N', C
-        return x
+        return x.reshape(B, -1, C)
 
 
 class AttentionSubsample(nn.Sequential):
@@ -282,14 +281,13 @@ class AttentionSubsample(nn.Sequential):
         N_sub = len(sub_points)
         attention_offsets = {}
         idxs = []
-        for p1 in sub_points:
-            for p2 in points:
-                size = 1
-                offset = (abs(p1[0] * stride - p2[0] + (size - 1) / 2),
-                          abs(p1[1] * stride - p2[1] + (size - 1) / 2))
-                if offset not in attention_offsets:
-                    attention_offsets[offset] = len(attention_offsets)
-                idxs.append(attention_offsets[offset])
+        size = 1
+        for p1, p2 in itertools.product(sub_points, points):
+            offset = (abs(p1[0] * stride - p2[0] + (size - 1) / 2),
+                      abs(p1[1] * stride - p2[1] + (size - 1) / 2))
+            if offset not in attention_offsets:
+                attention_offsets[offset] = len(attention_offsets)
+            idxs.append(attention_offsets[offset])
         self.attention_biases = torch.nn.Parameter(
             torch.zeros(num_heads, len(attention_offsets)))
         self.register_buffer('attention_bias_idxs',

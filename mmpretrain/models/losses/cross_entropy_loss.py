@@ -194,16 +194,16 @@ class CrossEntropyLoss(nn.Module):
         # only BCE loss has pos_weight
         if self.pos_weight is not None and self.use_sigmoid:
             pos_weight = cls_score.new_tensor(self.pos_weight)
-            kwargs.update({'pos_weight': pos_weight})
+            kwargs['pos_weight'] = pos_weight
         else:
             pos_weight = None
 
-        loss_cls = self.loss_weight * self.cls_criterion(
+        return self.loss_weight * self.cls_criterion(
             cls_score,
             label,
             weight,
             class_weight=class_weight,
             reduction=reduction,
             avg_factor=avg_factor,
-            **kwargs)
-        return loss_cls
+            **kwargs
+        )

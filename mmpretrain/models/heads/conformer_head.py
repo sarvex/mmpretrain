@@ -86,9 +86,7 @@ class ConformerHead(ClsHead):
         conv_cls_score, tran_cls_score = self(feats)
         cls_score = conv_cls_score + tran_cls_score
 
-        # The part can not be traced by torch.fx
-        predictions = self._get_predictions(cls_score, data_samples)
-        return predictions
+        return self._get_predictions(cls_score, data_samples)
 
     def _get_loss(self, cls_score: Tuple[torch.Tensor],
                   data_samples: List[DataSample], **kwargs) -> dict:
@@ -100,23 +98,17 @@ class ConformerHead(ClsHead):
         else:
             target = torch.cat([i.gt_label for i in data_samples])
 
-        # compute loss
-        losses = dict()
-        loss = sum([
-            self.loss_module(
-                score, target, avg_factor=score.size(0), **kwargs)
+        loss = sum(
+            self.loss_module(score, target, avg_factor=score.size(0), **kwargs)
             for score in cls_score
-        ])
-        losses['loss'] = loss
-
+        )
+        losses = {'loss': loss}
         # compute accuracy
         if self.cal_acc:
             assert target.ndim == 1, 'If you enable batch augmentation ' \
-                'like mixup during training, `cal_acc` is pointless.'
+                    'like mixup during training, `cal_acc` is pointless.'
             acc = Accuracy.calculate(
                 cls_score[0] + cls_score[1], target, topk=self.topk)
-            losses.update(
-                {f'accuracy_top-{k}': a
-                 for k, a in zip(self.topk, acc)})
+            losses |= {f'accuracy_top-{k}': a for k, a in zip(self.topk, acc)}
 
         return losses

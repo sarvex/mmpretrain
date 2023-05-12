@@ -39,8 +39,7 @@ def parse_args():
         '--node',
         type=str,
         help='Show the sub-tree of a node, like "backbone.layers".')
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def ckpt_to_state_dict(checkpoint, key=None):

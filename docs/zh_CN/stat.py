@@ -61,10 +61,11 @@ def count_papers(collections):
     paper_msgs = []
 
     for collection in collections:
-        with open(MMPT_ROOT / collection.readme) as f:
-            readme = f.read()
-        ckpts = set(x.lower().strip()
-                    for x in re.findall(r'\[model\]\((https?.*)\)', readme))
+        readme = Path(MMPT_ROOT / collection.readme).read_text()
+        ckpts = {
+            x.lower().strip()
+            for x in re.findall(r'\[model\]\((https?.*)\)', readme)
+        }
         total_num_ckpts += len(ckpts)
         title = collection.paper['Title']
         papertype = collection.data.get('type', 'Algorithm')
@@ -97,8 +98,7 @@ def generate_paper_page(collection):
     PAPERS_ROOT.mkdir(exist_ok=True)
 
     # Write a copy of README
-    with open(MMPT_ROOT / collection.readme) as f:
-        readme = f.read()
+    readme = Path(MMPT_ROOT / collection.readme).read_text()
     folder = Path(collection.filepath).parent
     copy = PAPERS_ROOT / folder.with_suffix('.md').name
 
@@ -114,7 +114,7 @@ def generate_paper_page(collection):
         return f'[{name}]({link})'
 
     content = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', replace_link, readme)
-    content = f'---\ngithub_page: /{collection.readme}\n---\n' + content
+    content = f'---\ngithub_page: /{collection.readme}\n---\n{content}'
 
     def make_tabs(matchobj):
         """modify the format from emphasis black symbol to tabs."""
@@ -155,8 +155,7 @@ def scatter_results(models):
             result = Result(task=None, dataset=None, metrics={})
             model_result_pairs.append((model, result))
         else:
-            for result in model.results:
-                model_result_pairs.append((model, result))
+            model_result_pairs.extend((model, result) for result in model.results)
     return model_result_pairs
 
 
@@ -176,10 +175,7 @@ def generate_summary_table(task, model_result_pairs, title=None):
         flops = f'{model.metadata.flops / 1e9:.2f}'  # Params
         readme = Path(model.collection.filepath).parent.with_suffix('.md').name
         page = f'[链接]({PAPERS_ROOT / readme})'
-        model_metrics = []
-        for metric in metrics:
-            model_metrics.append(str(result.metrics.get(metric, '')))
-
+        model_metrics = [str(result.metrics.get(metric, '')) for metric in metrics]
         rows.append([name, params, flops, *model_metrics, page])
 
     with open('modelzoo_statistics.md', 'a') as f:

@@ -177,12 +177,10 @@ class HRModule(BaseModule):
 
         x_fuse = []
         for i in range(len(self.fuse_layers)):
-            y = 0
-            for j in range(self.num_branches):
-                if i == j:
-                    y += x[j]
-                else:
-                    y += self.fuse_layers[i][j](x[j])
+            y = sum(
+                x[j] if i == j else self.fuse_layers[i][j](x[j])
+                for j in range(self.num_branches)
+            )
             x_fuse.append(self.relu(y))
         return x_fuse
 
@@ -474,21 +472,18 @@ class HRNet(BaseModule):
 
         hr_modules = []
         block_init_cfg = None
-        if self.zero_init_residual:
-            if block is BasicBlock:
+        if block is BasicBlock:
+            if self.zero_init_residual:
                 block_init_cfg = dict(
                     type='Constant', val=0, override=dict(name='norm2'))
-            elif block is Bottleneck:
+        elif block is Bottleneck:
+            if self.zero_init_residual:
                 block_init_cfg = dict(
                     type='Constant', val=0, override=dict(name='norm3'))
 
         for i in range(num_modules):
             # multi_scale_output is only used for the last module
-            if not multiscale_output and i == num_modules - 1:
-                reset_multiscale_output = False
-            else:
-                reset_multiscale_output = True
-
+            reset_multiscale_output = bool(multiscale_output or i != num_modules - 1)
             hr_modules.append(
                 HRModule(
                     num_branches,
@@ -546,18 +541,18 @@ class HRNet(BaseModule):
             return extra
 
         assert arch in self.arch_zoo, \
-            ('Invalid arch, please choose arch from '
+                ('Invalid arch, please choose arch from '
              f'{list(self.arch_zoo.keys())}, or specify `extra` '
              'argument directly.')
 
-        extra = dict()
-        for i, stage_setting in enumerate(self.arch_zoo[arch], start=1):
-            extra[f'stage{i}'] = dict(
+        extra = {
+            f'stage{i}': dict(
                 num_modules=stage_setting[0],
                 num_branches=stage_setting[1],
                 block=stage_setting[2],
                 num_blocks=stage_setting[3],
                 num_channels=stage_setting[4],
             )
-
+            for i, stage_setting in enumerate(self.arch_zoo[arch], start=1)
+        }
         return extra

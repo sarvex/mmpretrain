@@ -51,5 +51,4 @@ class BEiTV1Head(BaseModule):
         feats = feats[:, 1:]
         logits = self.cls_head(feats[mask])
 
-        loss = self.loss_module(logits, target)
-        return loss
+        return self.loss_module(logits, target)

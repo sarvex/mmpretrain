@@ -102,7 +102,7 @@ class MobileNetV3(BaseBackbone):
         assert arch in self.arch_settings
         if out_indices is None:
             out_indices = (12, ) if 'small' in arch else (16, )
-        for order, index in enumerate(out_indices):
+        for index in out_indices:
             if index not in range(0, len(self.arch_settings[arch]) + 2):
                 raise ValueError(
                     'the item in out_indices must in '
@@ -125,7 +125,6 @@ class MobileNetV3(BaseBackbone):
         self.feat_dim = self.arch_settings[arch][-1][1]
 
     def _make_layer(self):
-        layers = []
         layer_setting = self.arch_settings[self.arch]
         in_channels = 16
 
@@ -139,8 +138,7 @@ class MobileNetV3(BaseBackbone):
             norm_cfg=self.norm_cfg,
             act_cfg=dict(type='HSwish'))
         self.add_module('layer0', layer)
-        layers.append('layer0')
-
+        layers = ['layer0']
         for i, params in enumerate(layer_setting):
             (kernel_size, mid_channels, out_channels, with_se, act,
              stride) = params
@@ -170,7 +168,7 @@ class MobileNetV3(BaseBackbone):
                 act_cfg=dict(type=act),
                 with_cp=self.with_cp)
             in_channels = out_channels
-            layer_name = 'layer{}'.format(i + 1)
+            layer_name = f'layer{i + 1}'
             self.add_module(layer_name, layer)
             layers.append(layer_name)
 
@@ -185,7 +183,7 @@ class MobileNetV3(BaseBackbone):
             conv_cfg=self.conv_cfg,
             norm_cfg=self.norm_cfg,
             act_cfg=dict(type='HSwish'))
-        layer_name = 'layer{}'.format(len(layer_setting) + 1)
+        layer_name = f'layer{len(layer_setting) + 1}'
         self.add_module(layer_name, layer)
         layers.append(layer_name)
 

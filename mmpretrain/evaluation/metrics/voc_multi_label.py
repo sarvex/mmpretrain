@@ -37,11 +37,10 @@ class VOCMetricMixin:
             data_samples (Sequence[dict]): A batch of outputs from the model.
         """
         for data_sample in data_samples:
-            result = dict()
             gt_label = data_sample['gt_label']
             gt_label_difficult = data_sample['gt_label_difficult']
 
-            result['pred_score'] = data_sample['pred_score'].clone()
+            result = {'pred_score': data_sample['pred_score'].clone()}
             num_classes = result['pred_score'].size()[-1]
 
             if 'gt_score' in data_sample:

@@ -85,5 +85,4 @@ class BYOL(BaseSelfSupervisor):
         loss_1 = self.head.loss(proj_online_v1, proj_target_v2)
         loss_2 = self.head.loss(proj_online_v2, proj_target_v1)
 
-        losses = dict(loss=2. * (loss_1 + loss_2))
-        return losses
+        return dict(loss=2. * (loss_1 + loss_2))

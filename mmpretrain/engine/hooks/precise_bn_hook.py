@@ -92,18 +92,17 @@ def update_bn_stats(
         m for m in model.modules()
         if m.training and isinstance(m, (_BatchNorm))
     ]
-    if len(bn_layers) == 0:
+    if not bn_layers:
         print_log('No BN found in model', logger=logger, level=logging.WARNING)
         return
     print_log(
         f'{len(bn_layers)} BN found, run {num_iter} iters...', logger=logger)
 
-    # Finds all the other norm layers with training=True.
-    other_norm_layers = [
-        m for m in model.modules()
+    if other_norm_layers := [
+        m
+        for m in model.modules()
         if m.training and isinstance(m, (_InstanceNorm, GroupNorm))
-    ]
-    if len(other_norm_layers) > 0:
+    ]:
         print_log(
             'IN/GN stats will not be updated in PreciseHook.',
             logger=logger,

@@ -250,7 +250,7 @@ class EfficientNetV2(BaseBackbone):
         in_channels = self.arch[0][4]
         layer_setting = self.arch[:-1]
 
-        total_num_blocks = sum([x[0] for x in layer_setting])
+        total_num_blocks = sum(x[0] for x in layer_setting)
         block_idx = 0
         dpr = [
             x.item()
@@ -278,7 +278,6 @@ class EfficientNetV2(BaseBackbone):
                             conv_cfg=None,
                             norm_cfg=self.norm_cfg,
                             act_cfg=self.act_cfg))
-                    in_channels = out_channels
                 else:
                     mid_channels = int(in_channels * expand_ratio)
                     se_cfg = None
@@ -303,7 +302,7 @@ class EfficientNetV2(BaseBackbone):
                             act_cfg=self.act_cfg,
                             drop_path_rate=dpr[block_idx],
                             with_cp=self.with_cp))
-                    in_channels = out_channels
+                in_channels = out_channels
                 block_idx += 1
             self.layers.append(Sequential(*layer))
 

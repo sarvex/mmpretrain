@@ -64,8 +64,7 @@ def parse_args():
         default=0,
         help='id of gpu to use '
         '(only applicable to non-distributed testing)')
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 class ToyDataset:
@@ -107,14 +106,12 @@ def measure_fps(config_file, checkpoint, dataset, args, distributed=False):
     data_loader = build_dataloader(
         dataset,
         samples_per_gpu=args.batch_size,
-        # Because multiple processes will occupy additional CPU resources,
-        # FPS statistics will be more unstable when workers_per_gpu is not 0.
-        # It is reasonable to set workers_per_gpu to 0.
         workers_per_gpu=0,
-        dist=False if args.launcher == 'none' else True,
+        dist=args.launcher != 'none',
         shuffle=False,
         drop_last=True,
-        persistent_workers=False)
+        persistent_workers=False,
+    )
 
     # build the model and load checkpoint
     model = build_classifier(cfg.model)
@@ -124,16 +121,15 @@ def measure_fps(config_file, checkpoint, dataset, args, distributed=False):
     if checkpoint is not None:
         load_checkpoint(model, checkpoint, map_location='cpu')
 
-    if not distributed:
-        if args.device == 'cpu':
-            model = model.cpu()
-        else:
-            model = MMDataParallel(model, device_ids=[args.gpu_id])
-    else:
+    if distributed:
         model = MMDistributedDataParallel(
             model.cuda(),
             device_ids=[torch.cuda.current_device()],
             broadcast_buffers=False)
+    elif args.device == 'cpu':
+        model = model.cpu()
+    else:
+        model = MMDataParallel(model, device_ids=[args.gpu_id])
     model.eval()
 
     # the first several iterations may be very slow so skip them
@@ -177,12 +173,14 @@ def show_summary(summary_data, args):
     table.add_column('Inference Time (std) (ms/img)')
 
     for model_name, summary in summary_data.items():
-        row = [model_name]
-        row.append(str(summary['resolution']))
-        row.append(f"{summary['fps']:.2f}")
         time_mean = f"{summary['time_mean']:.2f}"
         time_std = f"{summary['time_std']:.2f}"
-        row.append(f'{time_mean}\t({time_std})'.expandtabs(8))
+        row = [
+            model_name,
+            str(summary['resolution']),
+            f"{summary['fps']:.2f}",
+            f'{time_mean}\t({time_std})'.expandtabs(8),
+        ]
         table.add_row(*row)
 
     console.print(table)
@@ -197,11 +195,12 @@ def main(args):
 
     if args.models:
         patterns = [re.compile(pattern) for pattern in args.models]
-        filter_models = {}
-        for k, v in models.items():
-            if any([re.match(pattern, k) for pattern in patterns]):
-                filter_models[k] = v
-        if len(filter_models) == 0:
+        filter_models = {
+            k: v
+            for k, v in models.items()
+            if any(re.match(pattern, k) for pattern in patterns)
+        }
+        if not filter_models:
             print('No model found, please specify models in:')
             print('\n'.join(models.keys()))
             return
@@ -225,12 +224,12 @@ def main(args):
 
         logger.info(f'Processing: {model_name}')
 
-        http_prefix = 'https://download.openmmlab.com/mmclassification/'
         dataset = model_info.results[0].dataset
         if dataset not in dataset_map.keys():
             continue
         if args.checkpoint_root is not None:
             root = args.checkpoint_root
+            http_prefix = 'https://download.openmmlab.com/mmclassification/'
             if 's3://' in args.checkpoint_root:
                 from mmcv.fileio import FileClient
                 from petrel_client.common.exception import AccessDeniedError

@@ -76,9 +76,7 @@ class ClsHead(BaseModule):
         # The part can be traced by torch.fx
         cls_score = self(feats)
 
-        # The part can not be traced by torch.fx
-        losses = self._get_loss(cls_score, data_samples, **kwargs)
-        return losses
+        return self._get_loss(cls_score, data_samples, **kwargs)
 
     def _get_loss(self, cls_score: torch.Tensor,
                   data_samples: List[DataSample], **kwargs):
@@ -90,20 +88,15 @@ class ClsHead(BaseModule):
         else:
             target = torch.cat([i.gt_label for i in data_samples])
 
-        # compute loss
-        losses = dict()
         loss = self.loss_module(
             cls_score, target, avg_factor=cls_score.size(0), **kwargs)
-        losses['loss'] = loss
-
+        losses = {'loss': loss}
         # compute accuracy
         if self.cal_acc:
             assert target.ndim == 1, 'If you enable batch augmentation ' \
-                'like mixup during training, `cal_acc` is pointless.'
+                    'like mixup during training, `cal_acc` is pointless.'
             acc = Accuracy.calculate(cls_score, target, topk=self.topk)
-            losses.update(
-                {f'accuracy_top-{k}': a
-                 for k, a in zip(self.topk, acc)})
+            losses |= {f'accuracy_top-{k}': a for k, a in zip(self.topk, acc)}
 
         return losses
 
@@ -130,9 +123,7 @@ class ClsHead(BaseModule):
         # The part can be traced by torch.fx
         cls_score = self(feats)
 
-        # The part can not be traced by torch.fx
-        predictions = self._get_predictions(cls_score, data_samples)
-        return predictions
+        return self._get_predictions(cls_score, data_samples)
 
     def _get_predictions(self, cls_score, data_samples):
         """Post-process the output of head.

@@ -12,5 +12,5 @@ def collect_env(with_torch_comiling_info=False):
     env_info['MMCV'] = mmcv.__version__
     if not with_torch_comiling_info:
         env_info.pop('PyTorch compiling details')
-    env_info['MMPreTrain'] = mmpretrain.__version__ + '+' + get_git_hash()[:7]
+    env_info['MMPreTrain'] = f'{mmpretrain.__version__}+{get_git_hash()[:7]}'
     return env_info

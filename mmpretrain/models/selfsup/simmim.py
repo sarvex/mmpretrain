@@ -134,31 +134,30 @@ class SimMIMSwinTransformer(SwinTransformer):
         if mask is None:
             return super().forward(x)
 
-        else:
-            x, hw_shape = self.patch_embed(x)
-            B, L, _ = x.shape
+        x, hw_shape = self.patch_embed(x)
+        B, L, _ = x.shape
 
-            mask_token = self.mask_token.expand(B, L, -1)
-            w = mask.flatten(1).unsqueeze(-1).type_as(mask_token)
-            x = x * (1. - w) + mask_token * w
+        mask_token = self.mask_token.expand(B, L, -1)
+        w = mask.flatten(1).unsqueeze(-1).type_as(mask_token)
+        x = x * (1. - w) + mask_token * w
 
-            if self.use_abs_pos_embed:
-                x = x + self.absolute_pos_embed
+        if self.use_abs_pos_embed:
+            x = x + self.absolute_pos_embed
 
-            x = self.drop_after_pos(x)
+        x = self.drop_after_pos(x)
 
-            outs = []
-            for i, stage in enumerate(self.stages):
-                x, hw_shape = stage(x, hw_shape)
-                if i in self.out_indices:
-                    norm_layer = getattr(self, f'norm{i}')
-                    out = norm_layer(x)
-                    out = out.view(-1, *hw_shape,
-                                   stage.out_channels).permute(0, 3, 1,
-                                                               2).contiguous()
-                    outs.append(out)
+        outs = []
+        for i, stage in enumerate(self.stages):
+            x, hw_shape = stage(x, hw_shape)
+            if i in self.out_indices:
+                norm_layer = getattr(self, f'norm{i}')
+                out = norm_layer(x)
+                out = out.view(-1, *hw_shape,
+                               stage.out_channels).permute(0, 3, 1,
+                                                           2).contiguous()
+                outs.append(out)
 
-            return tuple(outs)
+        return tuple(outs)
 
 
 @MODELS.register_module()
@@ -189,6 +188,4 @@ class SimMIM(BaseSelfSupervisor):
         img_latent = self.backbone(inputs, mask)
         img_rec = self.neck(img_latent[0])
         loss = self.head.loss(img_rec, inputs, mask)
-        losses = dict(loss=loss)
-
-        return losses
+        return dict(loss=loss)

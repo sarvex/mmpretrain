@@ -114,8 +114,7 @@ def parse_args():
         nargs='+',
         default=['models'],
         help='Update the specified readme file.')
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def filter_models_by_task(models, task):
@@ -167,18 +166,12 @@ def add_usage(metafile):
     if len(models) == 0:
         return
 
-    content = []
-    content.append('## How to use it?\n\n<!-- [TABS-BEGIN] -->\n')
-
-    # Predict image
-    cls_models = filter_models_by_task(models, 'Image Classification')
-    if cls_models:
+    content = ['## How to use it?\n\n<!-- [TABS-BEGIN] -->\n']
+    if cls_models := filter_models_by_task(models, 'Image Classification'):
         model_name = cls_models[0].name
         content.append(PREDICT_TEMPLATE.format(model_name=model_name))
 
-    # Retrieve image
-    retrieval_models = filter_models_by_task(models, 'Image Retrieval')
-    if retrieval_models:
+    if retrieval_models := filter_models_by_task(models, 'Image Retrieval'):
         model_name = retrieval_models[0].name
         content.append(RETRIEVE_TEMPLATE.format(model_name=model_name))
 
@@ -188,11 +181,11 @@ def add_usage(metafile):
 
     # Train/Test Command
     inputs = {}
-    train_model = [
-        model for model in models
+    if train_model := [
+        model
+        for model in models
         if 'headless' not in model.name and '3rdparty' not in model.name
-    ]
-    if train_model:
+    ]:
         template = TRAIN_TEST_TEMPLATE
         inputs['train_config'] = train_model[0].config
     else:
@@ -200,9 +193,7 @@ def add_usage(metafile):
     test_model = filter_models_by_task(models, task='any')[0]
     inputs['test_config'] = test_model.config
     inputs['test_weights'] = test_model.weights
-    content.append(template.format(**inputs))
-
-    content.append('\n<!-- [TABS-END] -->\n')
+    content.extend((template.format(**inputs), '\n<!-- [TABS-END] -->\n'))
     return '\n'.join(content)
 
 
@@ -234,19 +225,14 @@ def generate_model_table(models,
         for model in models:
             metrics.update(model.results[0].metrics.keys())
         metrics = sorted(list(set(metrics)))
-        for metric in metrics:
-            header.append(METRIC_MAPPING.get(metric, metric))
+        header.extend(METRIC_MAPPING.get(metric, metric) for metric in metrics)
     header.extend(['Config', 'Download'])
 
     rows = []
     for model in models:
         model_name = f'`{model.name}`'
         config = (MMPT_ROOT / model.config).relative_to(folder)
-        if model.weights is not None:
-            download = f'[model]({model.weights})'
-        else:
-            download = 'N/A'
-
+        download = f'[model]({model.weights})' if model.weights is not None else 'N/A'
         if 'Converted From' in model.data:
             model_name += '\*'
             converted_from = model.data['Converted From']
@@ -256,17 +242,17 @@ def generate_model_table(models,
 
         row = [model_name]
         if with_pretrain:
-            pretrain_field = [
-                field for field in model.name.split('_')
+            if pretrain_field := [
+                field
+                for field in model.name.split('_')
                 if field.endswith('-pre')
-            ]
-            if pretrain_field:
+            ]:
                 pretrain = format_pretrain(pretrain_field[0])
-                upstream = [
-                    pretrain_model for pretrain_model in pretrained_models
+                if upstream := [
+                    pretrain_model
+                    for pretrain_model in pretrained_models
                     if model.name in pretrain_model.data.get('Downstream', [])
-                ]
-                if upstream:
+                ]:
                     pretrain = f'[{pretrain}]({upstream[0].weights})'
             else:
                 pretrain = 'From scratch'
@@ -282,8 +268,7 @@ def generate_model_table(models,
             row.append('N/A')
 
         if with_metric:
-            for metric in metrics:
-                row.append(model.results[0].metrics.get(metric, 'N/A'))
+            row.extend(model.results[0].metrics.get(metric, 'N/A') for metric in metrics)
         row.append(f'[config]({config})')
         row.append(download)
 
@@ -314,14 +299,17 @@ def add_models(metafile):
     # Pretrained models
     pretrain_models = filter_models_by_task(models, task=None)
     if pretrain_models:
-        content.append('### Pretrained models\n')
-        content.append(
-            generate_model_table(
-                pretrain_models,
-                algo_folder,
-                with_pretrain=False,
-                with_metric=False))
-
+        content.extend(
+            (
+                '### Pretrained models\n',
+                generate_model_table(
+                    pretrain_models,
+                    algo_folder,
+                    with_pretrain=False,
+                    with_metric=False,
+                ),
+            )
+        )
     # Classification models
     tasks = [
         'Image Classification',
@@ -330,8 +318,7 @@ def add_models(metafile):
     ]
 
     for task in tasks:
-        task_models = filter_models_by_task(models, task=task)
-        if task_models:
+        if task_models := filter_models_by_task(models, task=task):
             datasets = {model.results[0].dataset for model in task_models}
             datasets = sorted(
                 list(datasets), key=lambda x: DATASET_PRIORITY.get(x, 50))
@@ -367,18 +354,18 @@ def parse_readme(readme):
         if section.startswith('# '):
             content['title'] = section.strip() + '\n'
         elif section.startswith('Introduction'):
-            content['intro'] = '## ' + section.strip() + '\n'
+            content['intro'] = f'## {section.strip()}' + '\n'
         elif section.startswith('Abstract'):
-            content['abs'] = '## ' + section.strip() + '\n'
+            content['abs'] = f'## {section.strip()}' + '\n'
         elif section.startswith('How to use it'):
-            content['usage'] = '## ' + section.strip() + '\n'
+            content['usage'] = f'## {section.strip()}' + '\n'
         elif section.startswith('Models and results'):
-            content['models'] = '## ' + section.strip() + '\n'
+            content['models'] = f'## {section.strip()}' + '\n'
         elif section.startswith('Citation'):
-            content['citation'] = '## ' + section.strip() + '\n'
+            content['citation'] = f'## {section.strip()}' + '\n'
         else:
             section_title = section.split('\n', maxsplit=1)[0]
-            content[section_title] = '## ' + section.strip() + '\n'
+            content[section_title] = f'## {section.strip()}' + '\n'
     return content
 
 
@@ -412,11 +399,7 @@ def main():
         print(add_models(metafile))
         return
 
-    if args.update is not None:
-        content = parse_readme(args.update)
-    else:
-        content = {}
-
+    content = parse_readme(args.update) if args.update is not None else {}
     if 'title' not in content or 'title' in args.update_items:
         content['title'] = add_title(metafile)
     if 'abs' not in content or 'abs' in args.update_items:

@@ -48,8 +48,5 @@ class CosineSimilarityLoss(BaseModule):
         loss = self.shift_factor - self.scale_factor * (
             pred_norm * target_norm).sum(dim=-1)
 
-        if mask is None:
-            loss = loss.mean()
-        else:
-            loss = (loss * mask).sum() / mask.sum()
+        loss = loss.mean() if mask is None else (loss * mask).sum() / mask.sum()
         return loss

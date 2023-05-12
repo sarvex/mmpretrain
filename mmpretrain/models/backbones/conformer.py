@@ -132,10 +132,7 @@ class ConvBlock(BaseModule):
         x += identity
         x = self.act3(x)
 
-        if out_conv2:
-            return x, x2
-        else:
-            return x
+        return (x, x2) if out_conv2 else x
 
 
 class FCUDown(BaseModule):
@@ -393,14 +390,14 @@ class Conformer(BaseBackbone):
         if isinstance(arch, str):
             arch = arch.lower()
             assert arch in set(self.arch_zoo), \
-                f'Arch {arch} is not in default archs {set(self.arch_zoo)}'
+                    f'Arch {arch} is not in default archs {set(self.arch_zoo)}'
             self.arch_settings = self.arch_zoo[arch]
         else:
             essential_keys = {
                 'embed_dims', 'depths', 'num_heads', 'channel_ratio'
             }
             assert isinstance(arch, dict) and set(arch) == essential_keys, \
-                f'Custom arch needs a dict with keys {essential_keys}'
+                    f'Custom arch needs a dict with keys {essential_keys}'
             self.arch_settings = arch
 
         self.num_features = self.embed_dims = self.arch_settings['embed_dims']
@@ -411,8 +408,8 @@ class Conformer(BaseBackbone):
         if isinstance(out_indices, int):
             out_indices = [out_indices]
         assert isinstance(out_indices, Sequence), \
-            f'"out_indices" must by a sequence or int, ' \
-            f'get {type(out_indices)} instead.'
+                f'"out_indices" must by a sequence or int, ' \
+                f'get {type(out_indices)} instead.'
         for i, index in enumerate(out_indices):
             if index < 0:
                 out_indices[i] = self.depths + index + 1
@@ -441,7 +438,7 @@ class Conformer(BaseBackbone):
             kernel_size=3, stride=2, padding=1)  # 1 / 4 [56, 56]
 
         assert patch_size % 16 == 0, 'The patch size of Conformer must ' \
-            'be divisible by 16.'
+                'be divisible by 16.'
         trans_down_stride = patch_size // 4
 
         # To solve the issue #680
@@ -501,7 +498,7 @@ class Conformer(BaseBackbone):
                 conv_stride = 1
                 in_channels = stage2_channels
 
-            with_residual_conv = True if i == init_stage else False
+            with_residual_conv = i == init_stage
             self.add_module(
                 f'conv_trans_{i}',
                 ConvTransBlock(

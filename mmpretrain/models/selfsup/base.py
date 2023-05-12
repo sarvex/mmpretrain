@@ -120,11 +120,10 @@ class BaseSelfSupervisor(BaseModel, metaclass=ABCMeta):
             - If ``mode="tensor"``, return a tensor or a tuple of tensor.
             - If ``mode="loss"``, return a dict of tensor.
         """
-        if mode == 'tensor':
-            feats = self.extract_feat(inputs)
-            return feats
-        elif mode == 'loss':
+        if mode == 'loss':
             return self.loss(inputs, data_samples)
+        elif mode == 'tensor':
+            return self.extract_feat(inputs)
         else:
             raise RuntimeError(f'Invalid mode "{mode}".')
 
@@ -140,8 +139,7 @@ class BaseSelfSupervisor(BaseModel, metaclass=ABCMeta):
         Returns:
             tuple | Tensor: The output feature tensor(s).
         """
-        x = self.backbone(inputs)
-        return x
+        return self.backbone(inputs)
 
     @abstractmethod
     def loss(self, inputs: torch.Tensor,

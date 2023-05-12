@@ -90,10 +90,7 @@ class MixMIMWindowAttention(WindowMSA):
             else:
                 attn = attn - 1e30 * mask_new
 
-            attn = self.softmax(attn)
-        else:
-            attn = self.softmax(attn)
-
+        attn = self.softmax(attn)
         attn = self.attn_drop(attn)
 
         x = (attn @ v).transpose(1, 2).reshape(B_, N, C)
@@ -402,12 +399,12 @@ class MixMIMTransformer(BaseBackbone):
         if isinstance(arch, str):
             arch = arch.lower()
             assert arch in set(self.arch_zoo), \
-                f'Arch {arch} is not in default archs {set(self.arch_zoo)}'
+                    f'Arch {arch} is not in default archs {set(self.arch_zoo)}'
             self.arch_settings = self.arch_zoo[arch]
         else:
             essential_keys = {'embed_dims', 'depths', 'num_heads'}
             assert isinstance(arch, dict) and essential_keys <= set(arch), \
-                f'Custom arch needs a dict with keys {essential_keys}'
+                    f'Custom arch needs a dict with keys {essential_keys}'
             self.arch_settings = arch
 
         self.embed_dims = self.arch_settings['embed_dims']
@@ -433,7 +430,7 @@ class MixMIMTransformer(BaseBackbone):
             stride=patch_size,
             norm_cfg=dict(type='LN'),
         )
-        _patch_cfg.update(patch_cfg)
+        _patch_cfg |= patch_cfg
         self.patch_embed = PatchEmbed(**_patch_cfg)
         self.patch_resolution = self.patch_embed.init_out_size
 

@@ -36,10 +36,7 @@ class RelativePositionBias(BaseModule):
     ) -> None:
         super().__init__()
         self.window_size = window_size
-        if with_cls_token:
-            num_extra_tokens = 3
-        else:
-            num_extra_tokens = 0
+        num_extra_tokens = 3 if with_cls_token else 0
         # cls to token & token to cls & cls to cls
         self.num_relative_distance = (2 * window_size[0] - 1) * (
             2 * window_size[1] - 1) + num_extra_tokens
@@ -54,7 +51,7 @@ class RelativePositionBias(BaseModule):
         coords = torch.stack(torch.meshgrid([coords_h, coords_w]))  # 2, Wh, Ww
         coords_flatten = torch.flatten(coords, 1)  # 2, Wh*Ww
         relative_coords = coords_flatten[:, :, None] -\
-            coords_flatten[:, None, :]  # 2, Wh*Ww, Wh*Ww
+                coords_flatten[:, None, :]  # 2, Wh*Ww, Wh*Ww
         relative_coords = relative_coords.permute(
             1, 2, 0).contiguous()  # Wh*Ww, Wh*Ww, 2
         relative_coords[:, :, 0] += window_size[0] - 1  # shift to start from 0
@@ -310,14 +307,14 @@ class BEiTViT(VisionTransformer):
         if isinstance(arch, str):
             arch = arch.lower()
             assert arch in set(self.arch_zoo), \
-                f'Arch {arch} is not in default archs {set(self.arch_zoo)}'
+                    f'Arch {arch} is not in default archs {set(self.arch_zoo)}'
             self.arch_settings = self.arch_zoo[arch]
         else:
             essential_keys = {
                 'embed_dims', 'num_layers', 'num_heads', 'feedforward_channels'
             }
             assert isinstance(arch, dict) and essential_keys <= set(arch), \
-                f'Custom arch needs a dict with keys {essential_keys}'
+                    f'Custom arch needs a dict with keys {essential_keys}'
             self.arch_settings = arch
 
         self.embed_dims = self.arch_settings['embed_dims']
@@ -333,7 +330,7 @@ class BEiTViT(VisionTransformer):
             kernel_size=patch_size,
             stride=patch_size,
         )
-        _patch_cfg.update(patch_cfg)
+        _patch_cfg |= patch_cfg
         self.patch_embed = PatchEmbed(**_patch_cfg)
         self.patch_resolution = self.patch_embed.init_out_size
         num_patches = self.patch_resolution[0] * self.patch_resolution[1]
@@ -383,13 +380,13 @@ class BEiTViT(VisionTransformer):
         if isinstance(out_indices, int):
             out_indices = [out_indices]
         assert isinstance(out_indices, Sequence), \
-            f'"out_indices" must by a sequence or int, ' \
-            f'get {type(out_indices)} instead.'
+                f'"out_indices" must by a sequence or int, ' \
+                f'get {type(out_indices)} instead.'
         for i, index in enumerate(out_indices):
             if index < 0:
                 out_indices[i] = self.num_layers + index
             assert 0 <= out_indices[i] <= self.num_layers, \
-                f'Invalid out_indices {index}'
+                    f'Invalid out_indices {index}'
         self.out_indices = out_indices
 
         # stochastic depth decay rule
@@ -411,7 +408,7 @@ class BEiTViT(VisionTransformer):
                 drop_path_rate=dpr[i],
                 bias=bias,
                 norm_cfg=norm_cfg)
-            _layer_cfg.update(layer_cfgs[i])
+            _layer_cfg |= layer_cfgs[i]
             self.layers.append(BEiTTransformerEncoderLayer(**_layer_cfg))
 
         self.frozen_stages = frozen_stages
@@ -486,7 +483,7 @@ class BEiTViT(VisionTransformer):
             for i in range(self.num_layers):
                 state_dict[
                     f'layers.{i}.attn.relative_position_bias_table'] = \
-                        rel_pos_bias.clone()
+                            rel_pos_bias.clone()
             state_dict.pop('rel_pos_bias.relative_position_bias_table')
             state_dict.pop('rel_pos_bias.relative_position_index')
 
@@ -501,12 +498,12 @@ class BEiTViT(VisionTransformer):
                 rel_pos_bias_current = state_dict_model[key]
                 L1, nH1 = rel_pos_bias_pretrained.size()
                 L2, nH2 = rel_pos_bias_current.size()
-                src_size = int((L1 - 3)**0.5)
-                dst_size = int((L2 - 3)**0.5)
                 if L1 != L2:
                     extra_tokens = rel_pos_bias_pretrained[-3:, :]
                     rel_pos_bias = rel_pos_bias_pretrained[:-3, :]
 
+                    src_size = int((L1 - 3)**0.5)
+                    dst_size = int((L2 - 3)**0.5)
                     new_rel_pos_bias = resize_relative_position_bias_table(
                         src_size, dst_size, rel_pos_bias, nH1)
                     new_rel_pos_bias = torch.cat(

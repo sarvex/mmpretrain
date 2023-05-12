@@ -12,7 +12,4 @@ def get_ori_model(model: nn.Module) -> nn.Module:
     Returns:
         nn.Module: The model without model wrapper.
     """
-    if is_model_wrapper(model):
-        return model.module
-    else:
-        return model
+    return model.module if is_model_wrapper(model) else model

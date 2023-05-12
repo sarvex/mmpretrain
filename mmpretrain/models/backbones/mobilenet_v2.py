@@ -84,10 +84,7 @@ class InvertedResidual(BaseModule):
     def forward(self, x):
 
         def _inner_forward(x):
-            if self.use_res_connect:
-                return x + self.conv(x)
-            else:
-                return self.conv(x)
+            return x + self.conv(x) if self.use_res_connect else self.conv(x)
 
         if self.with_cp and x.requires_grad:
             out = cp.checkpoint(_inner_forward, x)
@@ -188,11 +185,7 @@ class MobileNetV2(BaseBackbone):
             self.add_module(layer_name, inverted_res_layer)
             self.layers.append(layer_name)
 
-        if widen_factor > 1.0:
-            self.out_channel = int(1280 * widen_factor)
-        else:
-            self.out_channel = 1280
-
+        self.out_channel = int(1280 * widen_factor) if widen_factor > 1.0 else 1280
         layer = ConvModule(
             in_channels=self.in_channels,
             out_channels=self.out_channel,

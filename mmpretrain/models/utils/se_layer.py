@@ -74,7 +74,4 @@ class SELayer(BaseModule):
         out = self.global_avgpool(x)
         out = self.conv1(out)
         out = self.conv2(out)
-        if self.return_weight:
-            return out
-        else:
-            return x * out
+        return out if self.return_weight else x * out

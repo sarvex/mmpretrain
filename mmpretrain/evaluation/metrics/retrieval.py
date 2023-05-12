@@ -122,9 +122,9 @@ class RetrievalRecall(BaseMetric):
             Dict: The computed metrics. The keys are the names of the metrics,
             and the values are corresponding results.
         """
-        result_metrics = dict()
+        result_metrics = {}
         for i, k in enumerate(self.topk):
-            recall_at_k = sum([r[i].item() for r in results]) / len(results)
+            recall_at_k = sum(r[i].item() for r in results) / len(results)
             result_metrics[f'Recall@{k}'] = recall_at_k
 
         return result_metrics
@@ -228,5 +228,4 @@ def _format_target(label, is_indices=False):
         raise TypeError(f'The pred must be type of torch.tensor, '
                         f'np.ndarray or Sequence but get {type(label)}.')
 
-    indices = [sample_gt.nonzero().squeeze(-1) for sample_gt in label]
-    return indices
+    return [sample_gt.nonzero().squeeze(-1) for sample_gt in label]

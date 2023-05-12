@@ -440,37 +440,37 @@ class MobileOne(BaseBackbone):
             if i >= (num_blocks - num_se):
                 use_se = True
 
-            blocks.append(
-                # Depthwise conv
-                MobileOneBlock(
-                    in_channels=self.in_planes,
-                    out_channels=self.in_planes,
-                    kernel_size=3,
-                    num_convs=num_conv_branches,
-                    stride=strides[i],
-                    padding=1,
-                    groups=self.in_planes,
-                    se_cfg=self.se_cfg if use_se else None,
-                    conv_cfg=self.conv_cfg,
-                    norm_cfg=self.norm_cfg,
-                    act_cfg=self.act_cfg,
-                    deploy=self.deploy))
-
-            blocks.append(
-                # Pointwise conv
-                MobileOneBlock(
-                    in_channels=self.in_planes,
-                    out_channels=planes,
-                    kernel_size=1,
-                    num_convs=num_conv_branches,
-                    stride=1,
-                    padding=0,
-                    se_cfg=self.se_cfg if use_se else None,
-                    conv_cfg=self.conv_cfg,
-                    norm_cfg=self.norm_cfg,
-                    act_cfg=self.act_cfg,
-                    deploy=self.deploy))
-
+            blocks.extend(
+                (
+                    MobileOneBlock(
+                        in_channels=self.in_planes,
+                        out_channels=self.in_planes,
+                        kernel_size=3,
+                        num_convs=num_conv_branches,
+                        stride=strides[i],
+                        padding=1,
+                        groups=self.in_planes,
+                        se_cfg=self.se_cfg if use_se else None,
+                        conv_cfg=self.conv_cfg,
+                        norm_cfg=self.norm_cfg,
+                        act_cfg=self.act_cfg,
+                        deploy=self.deploy,
+                    ),
+                    MobileOneBlock(
+                        in_channels=self.in_planes,
+                        out_channels=planes,
+                        kernel_size=1,
+                        num_convs=num_conv_branches,
+                        stride=1,
+                        padding=0,
+                        se_cfg=self.se_cfg if use_se else None,
+                        conv_cfg=self.conv_cfg,
+                        norm_cfg=self.norm_cfg,
+                        act_cfg=self.act_cfg,
+                        deploy=self.deploy,
+                    ),
+                )
+            )
             self.in_planes = planes
 
         return Sequential(*blocks)

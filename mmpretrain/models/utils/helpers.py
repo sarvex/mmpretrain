@@ -14,10 +14,7 @@ def is_tracing() -> bool:
         on_trace = torch.jit.is_tracing()
         # In PyTorch 1.6, torch.jit.is_tracing has a bug.
         # Refers to https://github.com/pytorch/pytorch/issues/42448
-        if isinstance(on_trace, bool):
-            return on_trace
-        else:
-            return torch._C._is_tracing()
+        return on_trace if isinstance(on_trace, bool) else torch._C._is_tracing()
     else:
         warnings.warn(
             'torch.jit.is_tracing is only supported after v1.6.0. '
@@ -39,9 +36,7 @@ def _ntuple(n):
     """
 
     def parse(x):
-        if isinstance(x, collections.abc.Iterable):
-            return x
-        return tuple(repeat(x, n))
+        return x if isinstance(x, collections.abc.Iterable) else tuple(repeat(x, n))
 
     return parse
 

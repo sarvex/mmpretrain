@@ -134,11 +134,7 @@ class RepVGGBlock(BaseModule):
             if self.deploy:
                 return self.branch_reparam(inputs)
 
-            if self.branch_norm is None:
-                branch_norm_out = 0
-            else:
-                branch_norm_out = self.branch_norm(inputs)
-
+            branch_norm_out = 0 if self.branch_norm is None else self.branch_norm(inputs)
             inner_out = self.branch_3x3(inputs) + self.branch_1x1(
                 inputs) + branch_norm_out
 

@@ -211,5 +211,4 @@ class MoCoV3(BaseSelfSupervisor):
 
         loss = self.head.loss(q1, k2) + self.head.loss(q2, k1)
 
-        losses = dict(loss=loss)
-        return losses
+        return dict(loss=loss)

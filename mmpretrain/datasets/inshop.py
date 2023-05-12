@@ -70,8 +70,11 @@ class InShop(BaseDataset):
                  ann_file: str = 'Eval/list_eval_partition.txt',
                  **kwargs):
 
-        assert split in ('train', 'query', 'gallery'), "'split' of `InShop`" \
-            f" must be one of ['train', 'query', 'gallery'], bu get '{split}'"
+        assert split in {
+            'train',
+            'query',
+            'gallery',
+        }, f"'split' of `InShop` must be one of ['train', 'query', 'gallery'], bu get '{split}'"
         self.backend = get_file_backend(data_root, enable_singleton=True)
         self.split = split
         super().__init__(
@@ -83,8 +86,8 @@ class InShop(BaseDataset):
     def _process_annotations(self):
         lines = list_from_file(self.ann_file)
 
-        anno_train = dict(metainfo=dict(), data_list=list())
-        anno_gallery = dict(metainfo=dict(), data_list=list())
+        anno_train = dict(metainfo={}, data_list=[])
+        anno_gallery = dict(metainfo={}, data_list=[])
 
         # item_id to label, each item corresponds to one class label
         class_num = 0
@@ -116,17 +119,17 @@ class InShop(BaseDataset):
                     dict(img_path=img_path, sample_idx=gallery_num))
                 gallery_num += 1
 
-        if self.split == 'train':
-            anno_train['metainfo']['class_number'] = class_num
-            anno_train['metainfo']['sample_number'] = \
-                len(anno_train['data_list'])
-            return anno_train
-        elif self.split == 'gallery':
+        if self.split == 'gallery':
             anno_gallery['metainfo']['sample_number'] = gallery_num
             return anno_gallery
 
+        elif self.split == 'train':
+            anno_train['metainfo']['class_number'] = class_num
+            anno_train['metainfo']['sample_number'] = \
+                    len(anno_train['data_list'])
+            return anno_train
         # Generate the label for the query(val) set
-        anno_query = dict(metainfo=dict(), data_list=list())
+        anno_query = dict(metainfo={}, data_list=[])
         query_num = 0
         for line in lines[2:]:
             img_name, item_id, status = line.split()
@@ -148,10 +151,8 @@ class InShop(BaseDataset):
         return image and its id.
         """
         data_info = self._process_annotations()
-        data_list = data_info['data_list']
-        return data_list
+        return data_info['data_list']
 
     def extra_repr(self):
         """The extra repr information of the dataset."""
-        body = [f'Root of dataset: \t{self.data_root}']
-        return body
+        return [f'Root of dataset: \t{self.data_root}']

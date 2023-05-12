@@ -127,11 +127,7 @@ class Accuracy(BaseMetric):
                  prefix: Optional[str] = None) -> None:
         super().__init__(collect_device=collect_device, prefix=prefix)
 
-        if isinstance(topk, int):
-            self.topk = (topk, )
-        else:
-            self.topk = tuple(topk)
-
+        self.topk = (topk, ) if isinstance(topk, int) else tuple(topk)
         if isinstance(thrs, float) or thrs is None:
             self.thrs = (thrs, )
         else:
@@ -149,7 +145,7 @@ class Accuracy(BaseMetric):
         """
 
         for data_sample in data_samples:
-            result = dict()
+            result = {}
             if 'pred_score' in data_sample:
                 result['pred_score'] = data_sample['pred_score'].cpu()
             else:
@@ -238,15 +234,14 @@ class Accuracy(BaseMetric):
         target = to_tensor(target).to(torch.int64)
         num = pred.size(0)
         assert pred.size(0) == target.size(0), \
-            f"The size of pred ({pred.size(0)}) doesn't match "\
-            f'the target ({target.size(0)}).'
+                f"The size of pred ({pred.size(0)}) doesn't match "\
+                f'the target ({target.size(0)}).'
 
         if pred.ndim == 1:
             # For pred label, ignore topk and acc
             pred_label = pred.int()
             correct = pred.eq(target).float().sum(0, keepdim=True)
-            acc = correct.mul_(100. / num)
-            return acc
+            return correct.mul_(100. / num)
         else:
             # For pred score, calculate on all topk and thresholds.
             pred = pred.float()
@@ -415,14 +410,14 @@ class SingleLabelMetric(BaseMetric):
         """
 
         for data_sample in data_samples:
-            result = dict()
+            result = {}
             if 'pred_score' in data_sample:
                 result['pred_score'] = data_sample['pred_score'].cpu()
             else:
                 num_classes = self.num_classes or data_sample.get(
                     'num_classes')
                 assert num_classes is not None, \
-                    'The `num_classes` must be specified if no `pred_score`.'
+                        'The `num_classes` must be specified if no `pred_score`.'
                 result['pred_label'] = data_sample['pred_label'].cpu()
                 result['num_classes'] = num_classes
             result['gt_label'] = data_sample['gt_label'].cpu()
@@ -482,13 +477,13 @@ class SingleLabelMetric(BaseMetric):
                 num_classes=results[0]['num_classes'])
             metrics = pack_results(*res)
 
-        result_metrics = dict()
+        result_metrics = {}
         for k, v in metrics.items():
 
             if self.average is None:
-                result_metrics[k + '_classwise'] = v.cpu().detach().tolist()
+                result_metrics[f'{k}_classwise'] = v.cpu().detach().tolist()
             elif self.average == 'micro':
-                result_metrics[k + f'_{self.average}'] = v.item()
+                result_metrics[f'{k}_{self.average}'] = v.item()
             else:
                 result_metrics[k] = v.item()
 

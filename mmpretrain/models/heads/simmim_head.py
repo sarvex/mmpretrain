@@ -35,6 +35,4 @@ class SimMIMHead(BaseModule):
         """
         mask = mask.repeat_interleave(self.patch_size, 1).repeat_interleave(
             self.patch_size, 2).unsqueeze(1).contiguous()
-        loss = self.loss_module(pred, target, mask)
-
-        return loss
+        return self.loss_module(pred, target, mask)

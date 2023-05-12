@@ -26,6 +26,4 @@ class SwAVHead(BaseModule):
         Returns:
             torch.Tensor: The SwAV loss.
         """
-        loss = self.loss_module(pred)
-
-        return loss
+        return self.loss_module(pred)

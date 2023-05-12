@@ -85,13 +85,10 @@ class VisionTransformerClsHead(ClsHead):
         cls_token = feat[-1] if isinstance(feat, list) else feat
         if self.hidden_dim is None:
             return cls_token
-        else:
-            x = self.layers.pre_logits(cls_token)
-            return self.layers.act(x)
+        x = self.layers.pre_logits(cls_token)
+        return self.layers.act(x)
 
     def forward(self, feats: Tuple[List[torch.Tensor]]) -> torch.Tensor:
         """The forward process."""
         pre_logits = self.pre_logits(feats)
-        # The final classification head.
-        cls_score = self.layers.head(pre_logits)
-        return cls_score
+        return self.layers.head(pre_logits)

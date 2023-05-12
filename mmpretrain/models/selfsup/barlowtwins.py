@@ -38,5 +38,4 @@ class BarlowTwins(BaseSelfSupervisor):
         z2 = self.neck(self.backbone(img_v2))[0]  # NxC
 
         loss = self.head.loss(z1, z2)
-        losses = dict(loss=loss)
-        return losses
+        return dict(loss=loss)

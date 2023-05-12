@@ -130,10 +130,9 @@ class Transformer(nn.Module):
         for idx, blk in enumerate(self.resblocks):
             if idx < self.layers - 1:
                 x = blk(x)
-                z.append(x.permute(1, 0, 2))
             else:
                 x, attention = blk(x)
-                z.append(x.permute(1, 0, 2))
+            z.append(x.permute(1, 0, 2))
         return x, attention, z
 
 
@@ -348,10 +347,14 @@ def build_clip_model(state_dict: dict,
 
     if vit:
         vision_width = state_dict['visual.conv1.weight'].shape[0]
-        vision_layers = len([
-            k for k in state_dict.keys()
-            if k.startswith('visual.') and k.endswith('.attn.in_proj_weight')
-        ])
+        vision_layers = len(
+            [
+                k
+                for k in state_dict
+                if k.startswith('visual.')
+                and k.endswith('.attn.in_proj_weight')
+            ]
+        )
         vision_patch_size = state_dict['visual.conv1.weight'].shape[-1]
         grid_size = round(
             (state_dict['visual.positional_embedding'].shape[0] - 1)**0.5)
@@ -363,9 +366,12 @@ def build_clip_model(state_dict: dict,
     transformer_width = state_dict['ln_final.weight'].shape[0]
     transformer_heads = transformer_width // 64
     transformer_layers = len(
-        set(
-            k.split('.')[2] for k in state_dict
-            if k.startswith('transformer.resblocks')))
+        {
+            k.split('.')[2]
+            for k in state_dict
+            if k.startswith('transformer.resblocks')
+        }
+    )
 
     model = CLIP(
         embed_dim,

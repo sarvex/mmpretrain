@@ -150,17 +150,17 @@ class PatchEmbed(BaseModule):
             if len(img_size) == 1:
                 img_size = to_2tuple(img_size[0])
             assert len(img_size) == 2, \
-                f'The size of image should have length 1 or 2, ' \
-                f'but got {len(img_size)}'
+                    f'The size of image should have length 1 or 2, ' \
+                    f'but got {len(img_size)}'
 
         self.img_size = img_size
         self.embed_dims = embed_dims
 
         # Use conv layer to embed
-        conv_cfg = conv_cfg or dict()
+        conv_cfg = conv_cfg or {}
         _conv_cfg = dict(
             type='Conv2d', kernel_size=16, stride=16, padding=0, dilation=1)
-        _conv_cfg.update(conv_cfg)
+        _conv_cfg |= conv_cfg
         self.projection = build_conv_layer(_conv_cfg, in_channels, embed_dims)
 
         # Calculate how many patches a input image is splited to.
@@ -227,8 +227,8 @@ class HybridEmbed(BaseModule):
             if len(img_size) == 1:
                 img_size = to_2tuple(img_size[0])
             assert len(img_size) == 2, \
-                f'The size of image should have length 1 or 2, ' \
-                f'but got {len(img_size)}'
+                    f'The size of image should have length 1 or 2, ' \
+                    f'but got {len(img_size)}'
 
         self.img_size = img_size
         self.backbone = backbone
@@ -260,10 +260,10 @@ class HybridEmbed(BaseModule):
         self.num_patches = feature_size[0] * feature_size[1]
 
         # Use conv layer to embed
-        conv_cfg = conv_cfg or dict()
+        conv_cfg = conv_cfg or {}
         _conv_cfg = dict(
             type='Conv2d', kernel_size=1, stride=1, padding=0, dilation=1)
-        _conv_cfg.update(conv_cfg)
+        _conv_cfg |= conv_cfg
         self.projection = build_conv_layer(_conv_cfg, feature_dim, embed_dims)
 
     def forward(self, x):
@@ -328,11 +328,7 @@ class PatchMerging(BaseModule):
         self.out_channels = out_channels
         self.use_post_norm = use_post_norm
 
-        if stride:
-            stride = stride
-        else:
-            stride = kernel_size
-
+        stride = stride if stride else kernel_size
         kernel_size = to_2tuple(kernel_size)
         stride = to_2tuple(stride)
         dilation = to_2tuple(dilation)
@@ -359,14 +355,13 @@ class PatchMerging(BaseModule):
 
         self.reduction = nn.Linear(sample_dim, out_channels, bias=bias)
 
-        if norm_cfg is not None:
-            # build pre or post norm layer based on different channels
-            if self.use_post_norm:
-                self.norm = build_norm_layer(norm_cfg, out_channels)[1]
-            else:
-                self.norm = build_norm_layer(norm_cfg, sample_dim)[1]
-        else:
+        if norm_cfg is None:
             self.norm = None
+
+        elif self.use_post_norm:
+            self.norm = build_norm_layer(norm_cfg, out_channels)[1]
+        else:
+            self.norm = build_norm_layer(norm_cfg, sample_dim)[1]
 
     def forward(self, x, input_size):
         """

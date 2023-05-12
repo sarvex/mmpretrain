@@ -24,9 +24,7 @@ def get_2d_relative_pos_embed(embed_dim, grid_size):
     pos_embed: [grid_size*grid_size, grid_size*grid_size]
     """
     pos_embed = get_2d_sincos_pos_embed(embed_dim, grid_size)
-    relative_pos = 2 * np.matmul(pos_embed,
-                                 pos_embed.transpose()) / pos_embed.shape[1]
-    return relative_pos
+    return 2 * np.matmul(pos_embed, pos_embed.transpose()) / pos_embed.shape[1]
 
 
 def get_2d_sincos_pos_embed(embed_dim, grid_size, cls_token=False):
@@ -58,8 +56,7 @@ def get_2d_sincos_pos_embed_from_grid(embed_dim, grid):
     emb_w = get_1d_sincos_pos_embed_from_grid(embed_dim // 2,
                                               grid[1])  # (H*W, D/2)
 
-    emb = np.concatenate([emb_h, emb_w], axis=1)  # (H*W, D)
-    return emb
+    return np.concatenate([emb_h, emb_w], axis=1)
 
 
 def get_1d_sincos_pos_embed_from_grid(embed_dim, pos):
@@ -79,8 +76,7 @@ def get_1d_sincos_pos_embed_from_grid(embed_dim, pos):
     emb_sin = np.sin(out)  # (M, D/2)
     emb_cos = np.cos(out)  # (M, D/2)
 
-    emb = np.concatenate([emb_sin, emb_cos], axis=1)  # (M, D)
-    return emb
+    return np.concatenate([emb_sin, emb_cos], axis=1)
 
 
 def xy_pairwise_distance(x, y):
@@ -167,14 +163,12 @@ class DenseDilatedKnnGraph(nn.Module):
             x = F.normalize(x, p=2.0, dim=1)
             y = F.normalize(y, p=2.0, dim=1)
 
-            edge_index = xy_dense_knn_matrix(x, y, self.k * self.dilation,
-                                             relative_pos)
         else:
             x = F.normalize(x, p=2.0, dim=1)
             y = x.clone()
 
-            edge_index = xy_dense_knn_matrix(x, y, self.k * self.dilation,
-                                             relative_pos)
+        edge_index = xy_dense_knn_matrix(x, y, self.k * self.dilation,
+                                         relative_pos)
         return self._dilated(edge_index)
 
 
@@ -360,7 +354,8 @@ class GraphConv2d(nn.Module):
                                    norm_cfg, graph_conv_bias)
         else:
             raise NotImplementedError(
-                'graph_conv_type:{} is not supported'.format(graph_conv_type))
+                f'graph_conv_type:{graph_conv_type} is not supported'
+            )
 
     def forward(self, x, edge_index, y=None):
         return self.gconv(x, edge_index, y)
@@ -455,12 +450,11 @@ class Grapher(nn.Module):
     def _get_relative_pos(self, relative_pos, H, W):
         if relative_pos is None or H * W == self.n:
             return relative_pos
-        else:
-            N = H * W
-            N_reduced = N // (self.r * self.r)
-            return F.interpolate(
-                relative_pos.unsqueeze(0), size=(N, N_reduced),
-                mode='bicubic').squeeze(0)
+        N = H * W
+        N_reduced = N // (self.r * self.r)
+        return F.interpolate(
+            relative_pos.unsqueeze(0), size=(N, N_reduced),
+            mode='bicubic').squeeze(0)
 
     def forward(self, x):
         B, C, H, W = x.shape

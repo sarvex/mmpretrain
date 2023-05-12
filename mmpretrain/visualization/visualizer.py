@@ -277,8 +277,7 @@ class UniversalVisualizer(Visualizer):
 
         self.draw_binary_masks(mask_.bool(), colors=color, alphas=alpha)
 
-        drawn_img = self.get_image()
-        return drawn_img
+        return self.get_image()
 
     @master_only
     def visualize_masked_image(self,

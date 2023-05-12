@@ -36,9 +36,8 @@ class ModelHub:
             model_name = metainfo.name.lower()
             if metainfo.name in cls._models_dict:
                 raise ValueError(
-                    'The model name {} is conflict in {} and {}.'.format(
-                        model_name, osp.abspath(metainfo.filepath),
-                        osp.abspath(cls._models_dict[model_name].filepath)))
+                    f'The model name {model_name} is conflict in {osp.abspath(metainfo.filepath)} and {osp.abspath(cls._models_dict[model_name].filepath)}.'
+                )
             metainfo.config = cls._expand_config_path(metainfo, config_prefix)
             cls._models_dict[model_name] = metainfo
 
@@ -69,12 +68,11 @@ class ModelHub:
         if config_prefix is None:
             config_prefix = osp.dirname(metainfo.filepath)
 
-        if metainfo.config is None or osp.isabs(metainfo.config):
-            config_path: str = metainfo.config
-        else:
-            config_path = osp.abspath(osp.join(config_prefix, metainfo.config))
-
-        return config_path
+        return (
+            metainfo.config
+            if metainfo.config is None or osp.isabs(metainfo.config)
+            else osp.abspath(osp.join(config_prefix, metainfo.config))
+        )
 
     @classmethod
     def _register_mmpretrain_models(cls):
@@ -271,11 +269,11 @@ def list_models(pattern=None, exclude_patterns=None, task=None) -> List[str]:
 
     if pattern is not None:
         # Always match keys with any postfix.
-        matches = set(fnmatch.filter(matches, pattern + '*'))
+        matches = set(fnmatch.filter(matches, f'{pattern}*'))
 
     exclude_patterns = exclude_patterns or []
     for exclude_pattern in exclude_patterns:
-        exclude = set(fnmatch.filter(matches, exclude_pattern + '*'))
+        exclude = set(fnmatch.filter(matches, f'{exclude_pattern}*'))
         matches = matches - exclude
 
     if task is not None:

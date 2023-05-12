@@ -101,7 +101,7 @@ class MixMIMPretrainDecoder(MAEPretrainDecoder):
         x = x + self.decoder_pos_embed
 
         # apply Transformer blocks
-        for idx, blk in enumerate(self.decoder_blocks):
+        for blk in self.decoder_blocks:
             x = blk(x)
         x = self.decoder_norm(x)
 

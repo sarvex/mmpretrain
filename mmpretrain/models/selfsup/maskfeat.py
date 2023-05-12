@@ -105,8 +105,7 @@ class HOGGenerator(BaseModule):
         norm_rgb = norm_rgb.view(b, c, 1, h, w)
         if self.gaussian_window:
             if h != self.gaussian_window:
-                assert h % self.gaussian_window == 0, 'h {} gw {}'.format(
-                    h, self.gaussian_window)
+                assert h % self.gaussian_window == 0, f'h {h} gw {self.gaussian_window}'
                 repeat_rate = h // self.gaussian_window
                 temp_gaussian_kernel = self.gaussian_kernel.repeat(
                     [repeat_rate, repeat_rate])
@@ -127,8 +126,8 @@ class HOGGenerator(BaseModule):
     def generate_hog_image(self, hog_out: torch.Tensor) -> np.ndarray:
         """Generate HOG image according to HOG features."""
         assert hog_out.size(0) == 1 and hog_out.size(1) == 3, \
-            'Check the input batch size and the channcel number, only support'\
-            '"batch_size = 1".'
+                'Check the input batch size and the channcel number, only support'\
+                '"batch_size = 1".'
         hog_image = np.zeros([self.h, self.w])
         cell_gradient = np.array(hog_out.mean(dim=1).squeeze().detach().cpu())
         cell_width = self.pool / 2
@@ -150,7 +149,7 @@ class HOGGenerator(BaseModule):
                              magnitude * cell_width * math.cos(angle_radian))
                     y2 = int(y * self.pool -
                              magnitude * cell_width * math.sin(angle_radian))
-                    magnitude = 0 if magnitude < 0 else magnitude
+                    magnitude = max(magnitude, 0)
                     cv2.line(hog_image, (y1, x1), (y2, x2),
                              int(255 * math.sqrt(magnitude)))
                     angle += angle_gap
@@ -273,29 +272,28 @@ class MaskFeatViT(VisionTransformer):
         if mask is None:
             return super().forward(x)
 
-        else:
-            B = x.shape[0]
-            x = self.patch_embed(x)[0]
+        B = x.shape[0]
+        x = self.patch_embed(x)[0]
 
-            # masking: length -> length * mask_ratio
-            B, L, _ = x.shape
-            mask_tokens = self.mask_token.expand(B, L, -1)
-            mask = mask.unsqueeze(-1)
-            x = x * (1 - mask.int()) + mask_tokens * mask
+        # masking: length -> length * mask_ratio
+        B, L, _ = x.shape
+        mask_tokens = self.mask_token.expand(B, L, -1)
+        mask = mask.unsqueeze(-1)
+        x = x * (1 - mask.int()) + mask_tokens * mask
 
-            # append cls token
-            cls_tokens = self.cls_token.expand(B, -1, -1)
-            x = torch.cat((cls_tokens, x), dim=1)
-            x = x + self.pos_embed
-            x = self.drop_after_pos(x)
+        # append cls token
+        cls_tokens = self.cls_token.expand(B, -1, -1)
+        x = torch.cat((cls_tokens, x), dim=1)
+        x = x + self.pos_embed
+        x = self.drop_after_pos(x)
 
-            for i, layer in enumerate(self.layers):
-                x = layer(x)
+        for i, layer in enumerate(self.layers):
+            x = layer(x)
 
-                if i == len(self.layers) - 1 and self.final_norm:
-                    x = self.norm1(x)
+            if i == len(self.layers) - 1 and self.final_norm:
+                x = self.norm1(x)
 
-            return x
+        return x
 
 
 @MODELS.register_module()
@@ -332,5 +330,4 @@ class MaskFeat(BaseSelfSupervisor):
 
         # remove cls_token before compute loss
         loss = self.head.loss(pred[:, 1:], hog, mask)
-        losses = dict(loss=loss)
-        return losses
+        return dict(loss=loss)

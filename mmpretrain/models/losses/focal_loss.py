@@ -105,12 +105,12 @@ class FocalLoss(nn.Module):
             reduction_override if reduction_override else self.reduction)
         if target.dim() == 1 or (target.dim() == 2 and target.shape[1] == 1):
             target = convert_to_one_hot(target.view(-1, 1), pred.shape[-1])
-        loss_cls = self.loss_weight * sigmoid_focal_loss(
+        return self.loss_weight * sigmoid_focal_loss(
             pred,
             target,
             weight,
             gamma=self.gamma,
             alpha=self.alpha,
             reduction=reduction,
-            avg_factor=avg_factor)
-        return loss_cls
+            avg_factor=avg_factor,
+        )

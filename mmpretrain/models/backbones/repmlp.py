@@ -21,15 +21,14 @@ def fuse_bn(conv_or_fc, bn):
     if len(tmp_weight) == conv_or_fc.weight.size(0):
         return (conv_or_fc.weight * tmp_weight,
                 bn.bias - bn.running_mean * bn.weight / std)
-    else:
-        # in RepMLPBlock, dim0 of fc3 weights and fc3_bn weights
-        # are different.
-        repeat_times = conv_or_fc.weight.size(0) // len(tmp_weight)
-        repeated = tmp_weight.repeat_interleave(repeat_times, 0)
-        fused_weight = conv_or_fc.weight * repeated
-        bias = bn.bias - bn.running_mean * bn.weight / std
-        fused_bias = (bias).repeat_interleave(repeat_times, 0)
-        return (fused_weight, fused_bias)
+    # in RepMLPBlock, dim0 of fc3 weights and fc3_bn weights
+    # are different.
+    repeat_times = conv_or_fc.weight.size(0) // len(tmp_weight)
+    repeated = tmp_weight.repeat_interleave(repeat_times, 0)
+    fused_weight = conv_or_fc.weight * repeated
+    bias = bn.bias - bn.running_mean * bn.weight / std
+    fused_bias = (bias).repeat_interleave(repeat_times, 0)
+    return (fused_weight, fused_bias)
 
 
 class PatchEmbed(_PatchEmbed):
@@ -184,7 +183,7 @@ class RepMLPBlock(BaseModule):
                     norm_cfg=dict(type='BN', requires_grad=True),
                     groups=num_sharesets,
                     act_cfg=None)
-                self.__setattr__('repconv{}'.format(k), conv_branch)
+                self.__setattr__(f'repconv{k}', conv_branch)
 
     def partition(self, x, h_parts, w_parts):
         # convert (N, C, H, W) to (N, h_parts, w_parts, C, path_h, path_w)
@@ -222,7 +221,7 @@ class RepMLPBlock(BaseModule):
                                              self.path_h, self.path_w)
             conv_out = 0
             for k in self.reparam_conv_kernels:
-                conv_branch = self.__getattr__('repconv{}'.format(k))
+                conv_branch = self.__getattr__(f'repconv{k}')
                 conv_out += conv_branch(conv_inputs)
             conv_out = conv_out.reshape(-1, h_parts, w_parts,
                                         self.num_sharesets, self.path_h,
@@ -240,12 +239,12 @@ class RepMLPBlock(BaseModule):
         fc_weight, fc_bias = fuse_bn(self.fc3, self.fc3_bn)
         if self.reparam_conv_kernels is not None:
             largest_k = max(self.reparam_conv_kernels)
-            largest_branch = self.__getattr__('repconv{}'.format(largest_k))
+            largest_branch = self.__getattr__(f'repconv{largest_k}')
             total_kernel, total_bias = fuse_bn(largest_branch.conv,
                                                largest_branch.bn)
             for k in self.reparam_conv_kernels:
                 if k != largest_k:
-                    k_branch = self.__getattr__('repconv{}'.format(k))
+                    k_branch = self.__getattr__(f'repconv{k}')
                     kernel, bias = fuse_bn(k_branch.conv, k_branch.bn)
                     total_kernel += F.pad(kernel, [(largest_k - k) // 2] * 4)
                     total_bias += bias
@@ -266,7 +265,7 @@ class RepMLPBlock(BaseModule):
         #  Remove Local Perceptron
         if self.reparam_conv_kernels is not None:
             for k in self.reparam_conv_kernels:
-                self.__delattr__('repconv{}'.format(k))
+                self.__delattr__(f'repconv{k}')
         self.__delattr__('fc3')
         self.__delattr__('fc3_bn')
         self.fc3 = build_conv_layer(
@@ -353,8 +352,7 @@ class RepMLPNetUnit(BaseModule):
 
     def forward(self, x):
         y = x + self.repmlp_block(self.norm1(x))
-        out = y + self.ffn_block(self.norm2(y))
-        return out
+        return y + self.ffn_block(self.norm2(y))
 
 
 class ConvFFN(nn.Module):
@@ -463,12 +461,12 @@ class RepMLPNet(BaseModule):
         if isinstance(arch, str):
             arch = arch.lower()
             assert arch in set(self.arch_zoo), \
-                f'Arch {arch} is not in default archs {set(self.arch_zoo)}'
+                    f'Arch {arch} is not in default archs {set(self.arch_zoo)}'
             self.arch_settings = self.arch_zoo[arch]
         else:
             essential_keys = {'channels', 'depths', 'sharesets_nums'}
             assert isinstance(arch, dict) and set(arch) == essential_keys, \
-                f'Custom arch needs a dict with keys {essential_keys}.'
+                    f'Custom arch needs a dict with keys {essential_keys}.'
             self.arch_settings = arch
 
         self.img_size = to_2tuple(img_size)
@@ -495,7 +493,7 @@ class RepMLPNet(BaseModule):
             stride=self.patch_size,
             norm_cfg=self.norm_cfg,
             bias=False)
-        _patch_cfg.update(patch_cfg)
+        _patch_cfg |= patch_cfg
         self.patch_embed = PatchEmbed(**_patch_cfg)
         self.patch_resolution = self.patch_embed.init_out_size
 

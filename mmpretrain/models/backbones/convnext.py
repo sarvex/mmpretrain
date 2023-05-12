@@ -77,11 +77,7 @@ class ConvNeXtBlock(BaseModule):
         self.act = MODELS.build(act_cfg)
         self.pointwise_conv2 = pw_conv(mid_channels, in_channels)
 
-        if use_grn:
-            self.grn = GRN(mid_channels)
-        else:
-            self.grn = None
-
+        self.grn = GRN(mid_channels) if use_grn else None
         self.gamma = nn.Parameter(
             layer_scale_init_value * torch.ones((in_channels)),
             requires_grad=True) if layer_scale_init_value > 0 else None

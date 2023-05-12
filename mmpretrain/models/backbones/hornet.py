@@ -112,7 +112,7 @@ class GlobalLocalFilter(nn.Module):
         x2 = torch.fft.rfft2(x2, dim=(2, 3), norm='ortho')
 
         weight = self.complex_weight
-        if not weight.shape[1:3] == x2.shape[2:4]:
+        if weight.shape[1:3] != x2.shape[2:4]:
             weight = F.interpolate(
                 weight.permute(3, 0, 1, 2),
                 size=x2.shape[2:4],

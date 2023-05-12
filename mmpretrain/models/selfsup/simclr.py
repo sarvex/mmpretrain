@@ -94,5 +94,4 @@ class SimCLR(BaseSelfSupervisor):
         negative = torch.masked_select(s, neg_mask == 1).reshape(s.size(0), -1)
 
         loss = self.head.loss(positive, negative)
-        losses = dict(loss=loss)
-        return losses
+        return dict(loss=loss)

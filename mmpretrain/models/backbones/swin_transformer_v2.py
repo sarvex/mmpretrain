@@ -337,32 +337,13 @@ class SwinTransformerV2(BaseBackbone):
     _version = 1
     num_extra_tokens = 0
 
-    def __init__(self,
-                 arch='tiny',
-                 img_size=256,
-                 patch_size=4,
-                 in_channels=3,
-                 window_size=8,
-                 drop_rate=0.,
-                 drop_path_rate=0.1,
-                 out_indices=(3, ),
-                 use_abs_pos_embed=False,
-                 interpolate_mode='bicubic',
-                 with_cp=False,
-                 frozen_stages=-1,
-                 norm_eval=False,
-                 pad_small_map=False,
-                 norm_cfg=dict(type='LN'),
-                 stage_cfgs=dict(),
-                 patch_cfg=dict(),
-                 pretrained_window_sizes=[0, 0, 0, 0],
-                 init_cfg=None):
+    def __init__(self, arch='tiny', img_size=256, patch_size=4, in_channels=3, window_size=8, drop_rate=0., drop_path_rate=0.1, out_indices=(3, ), use_abs_pos_embed=False, interpolate_mode='bicubic', with_cp=False, frozen_stages=-1, norm_eval=False, pad_small_map=False, norm_cfg=dict(type='LN'), stage_cfgs={}, patch_cfg={}, pretrained_window_sizes=[0, 0, 0, 0], init_cfg=None):
         super(SwinTransformerV2, self).__init__(init_cfg=init_cfg)
 
         if isinstance(arch, str):
             arch = arch.lower()
             assert arch in set(self.arch_zoo), \
-                f'Arch {arch} is not in default archs {set(self.arch_zoo)}'
+                    f'Arch {arch} is not in default archs {set(self.arch_zoo)}'
             self.arch_settings = self.arch_zoo[arch]
         else:
             essential_keys = {
@@ -370,7 +351,7 @@ class SwinTransformerV2(BaseBackbone):
                 'extra_norm_every_n_blocks'
             }
             assert isinstance(arch, dict) and set(arch) == essential_keys, \
-                f'Custom arch needs a dict with keys {essential_keys}'
+                    f'Custom arch needs a dict with keys {essential_keys}'
             self.arch_settings = arch
 
         self.embed_dims = self.arch_settings['embed_dims']
@@ -388,8 +369,8 @@ class SwinTransformerV2(BaseBackbone):
             self.window_sizes = [window_size for _ in range(self.num_layers)]
         elif isinstance(window_size, Sequence):
             assert len(window_size) == self.num_layers, \
-                f'Length of window_sizes {len(window_size)} is not equal to '\
-                f'length of stages {self.num_layers}.'
+                    f'Length of window_sizes {len(window_size)} is not equal to '\
+                    f'length of stages {self.num_layers}.'
             self.window_sizes = window_size
         else:
             raise TypeError('window_size should be a Sequence or int.')
@@ -403,7 +384,7 @@ class SwinTransformerV2(BaseBackbone):
             stride=patch_size,
             norm_cfg=dict(type='LN'),
         )
-        _patch_cfg.update(patch_cfg)
+        _patch_cfg |= patch_cfg
         self.patch_embed = PatchEmbed(**_patch_cfg)
         self.patch_resolution = self.patch_embed.init_out_size
 
@@ -433,7 +414,7 @@ class SwinTransformerV2(BaseBackbone):
                 stage_cfg = stage_cfgs[i]
             else:
                 stage_cfg = deepcopy(stage_cfgs)
-            downsample = True if i > 0 else False
+            downsample = i > 0
             _stage_cfg = {
                 'embed_dims': embed_dims[-1],
                 'depth': depth,
@@ -522,7 +503,7 @@ class SwinTransformerV2(BaseBackbone):
                     m.eval()
 
     def _prepare_abs_pos_embed(self, state_dict, prefix, *args, **kwargs):
-        name = prefix + 'absolute_pos_embed'
+        name = f'{prefix}absolute_pos_embed'
         if name not in state_dict.keys():
             return
 

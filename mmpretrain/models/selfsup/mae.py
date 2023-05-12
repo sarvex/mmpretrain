@@ -179,29 +179,28 @@ class MAEViT(VisionTransformer):
             - ``mask`` (torch.Tensor): mask used to mask image.
             - ``ids_restore`` (torch.Tensor): ids to restore original image.
         """
-        if mask is None or False:
+        if mask is None:
             return super().forward(x)
 
-        else:
-            B = x.shape[0]
-            x = self.patch_embed(x)[0]
-            # add pos embed w/o cls token
-            x = x + self.pos_embed[:, 1:, :]
+        B = x.shape[0]
+        x = self.patch_embed(x)[0]
+        # add pos embed w/o cls token
+        x = x + self.pos_embed[:, 1:, :]
 
-            # masking: length -> length * mask_ratio
-            x, mask, ids_restore = self.random_masking(x, self.mask_ratio)
+        # masking: length -> length * mask_ratio
+        x, mask, ids_restore = self.random_masking(x, self.mask_ratio)
 
-            # append cls token
-            cls_token = self.cls_token + self.pos_embed[:, :1, :]
-            cls_tokens = cls_token.expand(B, -1, -1)
-            x = torch.cat((cls_tokens, x), dim=1)
+        # append cls token
+        cls_token = self.cls_token + self.pos_embed[:, :1, :]
+        cls_tokens = cls_token.expand(B, -1, -1)
+        x = torch.cat((cls_tokens, x), dim=1)
 
-            for _, layer in enumerate(self.layers):
-                x = layer(x)
-            # Use final norm
-            x = self.norm1(x)
+        for layer in self.layers:
+            x = layer(x)
+        # Use final norm
+        x = self.norm1(x)
 
-            return (x, mask, ids_restore)
+        return (x, mask, ids_restore)
 
 
 @MODELS.register_module()
@@ -232,5 +231,4 @@ class MAE(BaseSelfSupervisor):
         latent, mask, ids_restore = self.backbone(inputs)
         pred = self.neck(latent, ids_restore)
         loss = self.head.loss(pred, inputs, mask)
-        losses = dict(loss=loss)
-        return losses
+        return dict(loss=loss)

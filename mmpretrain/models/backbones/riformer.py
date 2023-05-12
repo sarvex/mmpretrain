@@ -92,16 +92,13 @@ class RIFormerBlock(BaseModule):
             x = x + self.drop_path(
                 self.layer_scale_1.unsqueeze(-1).unsqueeze(-1) *
                 self.norm_reparam(x))
-            x = x + self.drop_path(
-                self.layer_scale_2.unsqueeze(-1).unsqueeze(-1) *
-                self.mlp(self.norm2(x)))
         else:
             x = x + self.drop_path(
                 self.layer_scale_1.unsqueeze(-1).unsqueeze(-1) *
                 self.token_mixer(self.norm1(x)))
-            x = x + self.drop_path(
-                self.layer_scale_2.unsqueeze(-1).unsqueeze(-1) *
-                self.mlp(self.norm2(x)))
+        x = x + self.drop_path(
+            self.layer_scale_2.unsqueeze(-1).unsqueeze(-1) *
+            self.mlp(self.norm2(x)))
         return x
 
     def fuse_affine(self, norm, token_mixer):
@@ -155,9 +152,7 @@ def basic_blocks(dim,
                 layer_scale_init_value=layer_scale_init_value,
                 deploy=deploy,
             ))
-    blocks = nn.Sequential(*blocks)
-
-    return blocks
+    return nn.Sequential(*blocks)
 
 
 @MODELS.register_module()

@@ -280,9 +280,8 @@ class ShuffleNetV2(BaseBackbone):
                     normal_init(m, mean=0, std=1.0 / m.weight.shape[1])
             elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
                 constant_init(m.weight, val=1, bias=0.0001)
-                if isinstance(m, _BatchNorm):
-                    if m.running_mean is not None:
-                        nn.init.constant_(m.running_mean, 0)
+                if isinstance(m, _BatchNorm) and m.running_mean is not None:
+                    nn.init.constant_(m.running_mean, 0)
 
     def forward(self, x):
         x = self.conv1(x)

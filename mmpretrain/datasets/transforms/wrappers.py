@@ -85,11 +85,11 @@ class MultiView(BaseTransform):
             outputs = trans(inputs)
 
             multi_views_outputs['img'].append(outputs['img'])
-        results.update(multi_views_outputs)
+        results |= multi_views_outputs
         return results
 
     def __repr__(self) -> str:
-        repr_str = self.__class__.__name__ + '('
+        repr_str = f'{self.__class__.__name__}('
         for i, p in enumerate(self.pipelines):
             repr_str += f'\nPipeline {i + 1} with {self.num_views[i]} views:\n'
             repr_str += str(p)

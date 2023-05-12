@@ -135,7 +135,7 @@ class AsymmetricLoss(nn.Module):
             reduction_override if reduction_override else self.reduction)
         if target.dim() == 1 or (target.dim() == 2 and target.shape[1] == 1):
             target = convert_to_one_hot(target.view(-1, 1), pred.shape[-1])
-        loss_cls = self.loss_weight * asymmetric_loss(
+        return self.loss_weight * asymmetric_loss(
             pred,
             target,
             weight,
@@ -145,5 +145,5 @@ class AsymmetricLoss(nn.Module):
             reduction=reduction,
             avg_factor=avg_factor,
             use_sigmoid=self.use_sigmoid,
-            eps=self.eps)
-        return loss_cls
+            eps=self.eps,
+        )

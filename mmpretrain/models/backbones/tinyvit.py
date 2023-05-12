@@ -307,11 +307,7 @@ class ConvStage(BaseModule):
 
     def forward(self, x):
         for block in self.blocks:
-            if self.use_checkpoint:
-                x = checkpoint.checkpoint(block, x)
-            else:
-                x = block(x)
-
+            x = checkpoint.checkpoint(block, x) if self.use_checkpoint else block(x)
         if self.downsample is not None:
             x = self.downsample(x)
         return x
@@ -547,11 +543,7 @@ class BasicStage(BaseModule):
 
     def forward(self, x):
         for block in self.blocks:
-            if self.use_checkpoint:
-                x = checkpoint.checkpoint(block, x)
-            else:
-                x = block(x)
-
+            x = checkpoint.checkpoint(block, x) if self.use_checkpoint else block(x)
         if self.downsample is not None:
             x = self.downsample(x)
         return x

@@ -374,8 +374,7 @@ class ResLayer(nn.Sequential):
             ])
             downsample = nn.Sequential(*downsample)
 
-        layers = []
-        layers.append(
+        layers = [
             block(
                 in_channels=in_channels,
                 out_channels=out_channels,
@@ -384,18 +383,22 @@ class ResLayer(nn.Sequential):
                 downsample=downsample,
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
-                **kwargs))
+                **kwargs
+            )
+        ]
         in_channels = out_channels
-        for i in range(1, num_blocks):
-            layers.append(
-                block(
-                    in_channels=in_channels,
-                    out_channels=out_channels,
-                    expansion=self.expansion,
-                    stride=1,
-                    conv_cfg=conv_cfg,
-                    norm_cfg=norm_cfg,
-                    **kwargs))
+        layers.extend(
+            block(
+                in_channels=in_channels,
+                out_channels=out_channels,
+                expansion=self.expansion,
+                stride=1,
+                conv_cfg=conv_cfg,
+                norm_cfg=norm_cfg,
+                **kwargs
+            )
+            for _ in range(1, num_blocks)
+        )
         super(ResLayer, self).__init__(*layers)
 
 

@@ -39,5 +39,4 @@ class SimSiam(BaseSelfSupervisor):
         loss_1 = self.head.loss(z1, z2)
         loss_2 = self.head.loss(z2, z1)
 
-        losses = dict(loss=0.5 * (loss_1 + loss_2))
-        return losses
+        return dict(loss=0.5 * (loss_1 + loss_2))

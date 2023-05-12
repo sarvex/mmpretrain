@@ -248,9 +248,9 @@ class LocallyGroupedSelfAttention(BaseModule):
                                 self.window_size * self.window_size)
         # [1, _h*_w, window_size*window_size, window_size*window_size]
         attn_mask = mask.unsqueeze(2) - mask.unsqueeze(3)
-        attn_mask = attn_mask.masked_fill(attn_mask != 0,
-                                          float(-1000.0)).masked_fill(
-                                              attn_mask == 0, float(0.0))
+        attn_mask = attn_mask.masked_fill(attn_mask != 0, -1000.0).masked_fill(
+            attn_mask == 0, 0.0
+        )
 
         # [3, B, _w*_h, nhead, window_size*window_size, dim]
         qkv = self.qkv(x).reshape(B, _h * _w,
@@ -451,7 +451,7 @@ class PCPVT(BaseModule):
         if isinstance(arch, str):
             arch = arch.lower()
             assert arch in set(self.arch_zoo), \
-                f'Arch {arch} is not in default archs {set(self.arch_zoo)}'
+                    f'Arch {arch} is not in default archs {set(self.arch_zoo)}'
             self.arch_settings = self.arch_zoo[arch]
         else:
             assert isinstance(arch, dict) and (
@@ -481,11 +481,7 @@ class PCPVT(BaseModule):
 
         for i in range(self.num_stage):
             # use in_channels of the model in the first stage
-            if i == 0:
-                stage_in_channels = in_channels
-            else:
-                stage_in_channels = self.embed_dims[i - 1]
-
+            stage_in_channels = in_channels if i == 0 else self.embed_dims[i - 1]
             self.patch_embeds.append(
                 PatchEmbed(
                     in_channels=stage_in_channels,
@@ -538,12 +534,12 @@ class PCPVT(BaseModule):
         else:
             self.norm_after_stage = norm_after_stage
         assert len(self.norm_after_stage) == self.num_stage, \
-            (f'Number of norm_after_stage({len(self.norm_after_stage)}) should'
+                (f'Number of norm_after_stage({len(self.norm_after_stage)}) should'
              f' be equal to the number of stages({self.num_stage}).')
 
         for i, has_norm in enumerate(self.norm_after_stage):
             assert isinstance(has_norm, bool), 'norm_after_stage should be ' \
-                                               'bool or List[bool].'
+                                                   'bool or List[bool].'
             if has_norm and norm_cfg is not None:
                 norm_layer = build_norm_layer(norm_cfg, self.embed_dims[i])[1]
             else:
@@ -568,7 +564,7 @@ class PCPVT(BaseModule):
                         m, mean=0, std=math.sqrt(2.0 / fan_out), bias=0)
 
     def forward(self, x):
-        outputs = list()
+        outputs = []
 
         b = x.shape[0]
 

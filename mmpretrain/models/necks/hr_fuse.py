@@ -34,33 +34,30 @@ class HRFuseScales(BaseModule):
         block_type = Bottleneck
         out_channels = [128, 256, 512, 1024]
 
-        # Increase the channels on each resolution
-        # from C, 2C, 4C, 8C to 128, 256, 512, 1024
-        increase_layers = []
-        for i in range(len(in_channels)):
-            increase_layers.append(
-                ResLayer(
-                    block_type,
-                    in_channels=in_channels[i],
-                    out_channels=out_channels[i],
-                    num_blocks=1,
-                    stride=1,
-                ))
+        increase_layers = [
+            ResLayer(
+                block_type,
+                in_channels=in_channels[i],
+                out_channels=out_channels[i],
+                num_blocks=1,
+                stride=1,
+            )
+            for i in range(len(in_channels))
+        ]
         self.increase_layers = nn.ModuleList(increase_layers)
 
-        # Downsample feature maps in each scale.
-        downsample_layers = []
-        for i in range(len(in_channels) - 1):
-            downsample_layers.append(
-                ConvModule(
-                    in_channels=out_channels[i],
-                    out_channels=out_channels[i + 1],
-                    kernel_size=3,
-                    stride=2,
-                    padding=1,
-                    norm_cfg=self.norm_cfg,
-                    bias=False,
-                ))
+        downsample_layers = [
+            ConvModule(
+                in_channels=out_channels[i],
+                out_channels=out_channels[i + 1],
+                kernel_size=3,
+                stride=2,
+                padding=1,
+                norm_cfg=self.norm_cfg,
+                bias=False,
+            )
+            for i in range(len(in_channels) - 1)
+        ]
         self.downsample_layers = nn.ModuleList(downsample_layers)
 
         # The final conv block before final classifier linear layer.

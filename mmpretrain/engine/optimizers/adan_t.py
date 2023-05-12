@@ -57,21 +57,18 @@ class Adan(Optimizer):
                  max_grad_norm=0.0,
                  no_prox=False,
                  foreach: bool = True):
-        if not 0.0 <= max_grad_norm:
-            raise ValueError('Invalid Max grad norm: {}'.format(max_grad_norm))
-        if not 0.0 <= lr:
-            raise ValueError('Invalid learning rate: {}'.format(lr))
-        if not 0.0 <= eps:
-            raise ValueError('Invalid epsilon value: {}'.format(eps))
+        if max_grad_norm < 0.0:
+            raise ValueError(f'Invalid Max grad norm: {max_grad_norm}')
+        if lr < 0.0:
+            raise ValueError(f'Invalid learning rate: {lr}')
+        if eps < 0.0:
+            raise ValueError(f'Invalid epsilon value: {eps}')
         if not 0.0 <= betas[0] < 1.0:
-            raise ValueError('Invalid beta parameter at index 0: {}'.format(
-                betas[0]))
+            raise ValueError(f'Invalid beta parameter at index 0: {betas[0]}')
         if not 0.0 <= betas[1] < 1.0:
-            raise ValueError('Invalid beta parameter at index 1: {}'.format(
-                betas[1]))
+            raise ValueError(f'Invalid beta parameter at index 1: {betas[1]}')
         if not 0.0 <= betas[2] < 1.0:
-            raise ValueError('Invalid beta parameter at index 2: {}'.format(
-                betas[2]))
+            raise ValueError(f'Invalid beta parameter at index 2: {betas[2]}')
         defaults = dict(
             lr=lr,
             betas=betas,

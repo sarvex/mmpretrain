@@ -24,7 +24,4 @@ def substitute_weights(download_link, root):
         checkpoint = Path(root) / download_link[len(HTTP_PREFIX):]
         exists = checkpoint.exists()
 
-    if exists:
-        return str(checkpoint)
-    else:
-        return None
+    return str(checkpoint) if exists else None

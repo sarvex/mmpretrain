@@ -180,9 +180,8 @@ class MultiLabelMetric(BaseMetric):
             data_samples (Sequence[dict]): A batch of outputs from the model.
         """
         for data_sample in data_samples:
-            result = dict()
+            result = {'pred_score': data_sample['pred_score'].clone()}
 
-            result['pred_score'] = data_sample['pred_score'].clone()
             num_classes = result['pred_score'].size()[-1]
 
             if 'gt_score' in data_sample:
@@ -239,16 +238,16 @@ class MultiLabelMetric(BaseMetric):
                 metrics[k + suffix] = v
         else:
             for k, v in pack_results(*metric_res).items():
-                metrics[k + f'_top{self.topk}'] = v
+                metrics[f'{k}_top{self.topk}'] = v
 
-        result_metrics = dict()
+        result_metrics = {}
         for k, v in metrics.items():
             if self.average is None:
-                result_metrics[k + '_classwise'] = v.detach().cpu().tolist()
+                result_metrics[f'{k}_classwise'] = v.detach().cpu().tolist()
             elif self.average == 'macro':
                 result_metrics[k] = v.item()
             else:
-                result_metrics[k + f'_{self.average}'] = v.item()
+                result_metrics[f'{k}_{self.average}'] = v.item()
         return result_metrics
 
     @staticmethod
@@ -420,8 +419,7 @@ def _average_precision(pred: torch.Tensor,
 
     tps[torch.logical_not(pos_inds)] = 0
     precision = tps / pred_pos_nums.float()
-    ap = torch.sum(precision, 0) / max(total_pos, eps)
-    return ap
+    return torch.sum(precision, 0) / max(total_pos, eps)
 
 
 @METRICS.register_module()
@@ -513,9 +511,8 @@ class AveragePrecision(BaseMetric):
         """
 
         for data_sample in data_samples:
-            result = dict()
+            result = {'pred_score': data_sample['pred_score'].clone()}
 
-            result['pred_score'] = data_sample['pred_score'].clone()
             num_classes = result['pred_score'].size()[-1]
 
             if 'gt_score' in data_sample:
@@ -547,7 +544,7 @@ class AveragePrecision(BaseMetric):
 
         ap = self.calculate(pred, target, self.average)
 
-        result_metrics = dict()
+        result_metrics = {}
 
         if self.average is None:
             result_metrics['AP_classwise'] = ap.detach().cpu().tolist()
@@ -582,18 +579,15 @@ class AveragePrecision(BaseMetric):
         """
         average_options = ['macro', None]
         assert average in average_options, 'Invalid `average` argument, ' \
-            f'please specicy from {average_options}.'
+                f'please specicy from {average_options}.'
 
         pred = to_tensor(pred)
         target = to_tensor(target)
         assert pred.ndim == 2 and pred.shape == target.shape, \
-            'Both `pred` and `target` should have shape `(N, num_classes)`.'
+                'Both `pred` and `target` should have shape `(N, num_classes)`.'
 
         num_classes = pred.shape[1]
         ap = pred.new_zeros(num_classes)
         for k in range(num_classes):
             ap[k] = _average_precision(pred[:, k], target[:, k])
-        if average == 'macro':
-            return ap.mean() * 100.0
-        else:
-            return ap * 100
+        return ap.mean() * 100.0 if average == 'macro' else ap * 100

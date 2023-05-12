@@ -78,7 +78,7 @@ class RandomCrop(BaseTransform):
             assert crop_size > 0
             self.crop_size = (crop_size, crop_size)
         # check padding mode
-        assert padding_mode in ['constant', 'edge', 'reflect', 'symmetric']
+        assert padding_mode in {'constant', 'edge', 'reflect', 'symmetric'}
         self.padding = padding
         self.pad_if_needed = pad_if_needed
         self.pad_val = pad_val
@@ -153,7 +153,7 @@ class RandomCrop(BaseTransform):
         Returns:
             str: Formatted string.
         """
-        repr_str = self.__class__.__name__ + f'(crop_size={self.crop_size}'
+        repr_str = f'{self.__class__.__name__}(crop_size={self.crop_size}'
         repr_str += f', padding={self.padding}'
         repr_str += f', pad_if_needed={self.pad_if_needed}'
         repr_str += f', pad_val={self.pad_val}'
@@ -217,9 +217,8 @@ class RandomResizedCrop(BaseTransform):
                 f'But received crop_ratio_range {crop_ratio_range} '
                 f'and aspect_ratio_range {aspect_ratio_range}.')
         assert isinstance(max_attempts, int) and max_attempts >= 0, \
-            'max_attempts mush be int and no less than 0.'
-        assert interpolation in ('nearest', 'bilinear', 'bicubic', 'area',
-                                 'lanczos')
+                'max_attempts mush be int and no less than 0.'
+        assert interpolation in {'nearest', 'bilinear', 'bicubic', 'area', 'lanczos'}
 
         self.crop_ratio_range = crop_ratio_range
         self.aspect_ratio_range = aspect_ratio_range
@@ -304,7 +303,7 @@ class RandomResizedCrop(BaseTransform):
         Returns:
             str: Formatted string.
         """
-        repr_str = self.__class__.__name__ + f'(scale={self.scale}'
+        repr_str = f'{self.__class__.__name__}(scale={self.scale}'
         repr_str += ', crop_ratio_range='
         repr_str += f'{tuple(round(s, 4) for s in self.crop_ratio_range)}'
         repr_str += ', aspect_ratio_range='
@@ -389,8 +388,8 @@ class EfficientNetRandomCrop(RandomResizedCrop):
 
             if max_target_h * aspect_ratio > w:
                 max_target_h = int((w + 0.5 - 1e-7) / aspect_ratio)
-                if max_target_h * aspect_ratio > w:
-                    max_target_h -= 1
+            if max_target_h * aspect_ratio > w:
+                max_target_h -= 1
 
             max_target_h = min(max_target_h, h)
             min_target_h = min(max_target_h, min_target_h)
@@ -642,8 +641,7 @@ class EfficientNetCenterCrop(BaseTransform):
         assert isinstance(crop_size, int)
         assert crop_size > 0
         assert crop_padding >= 0
-        assert interpolation in ('nearest', 'bilinear', 'bicubic', 'area',
-                                 'lanczos')
+        assert interpolation in {'nearest', 'bilinear', 'bicubic', 'area', 'lanczos'}
 
         self.crop_size = crop_size
         self.crop_padding = crop_padding
@@ -694,7 +692,7 @@ class EfficientNetCenterCrop(BaseTransform):
         Returns:
             str: Formatted string.
         """
-        repr_str = self.__class__.__name__ + f'(crop_size={self.crop_size}'
+        repr_str = f'{self.__class__.__name__}(crop_size={self.crop_size}'
         repr_str += f', crop_padding={self.crop_padding}'
         repr_str += f', interpolation={self.interpolation}'
         repr_str += f', backend={self.backend})'
@@ -857,24 +855,19 @@ class ColorJitter(BaseTransform):
                     f'If {name} is a single number, it must be non negative.')
             value = (center - float(value), center + float(value))
 
-        if isinstance(value, (tuple, list)) and len(value) == 2:
-            if not bound[0] <= value[0] <= value[1] <= bound[1]:
-                value = np.clip(value, bound[0], bound[1])
-                from mmengine.logging import MMLogger
-                logger = MMLogger.get_current_instance()
-                logger.warning(f'ColorJitter {name} values exceed the bound '
-                               f'{bound}, clipped to the bound.')
-        else:
+        if not isinstance(value, (tuple, list)) or len(value) != 2:
             raise TypeError(f'{name} should be a single number '
                             'or a list/tuple with length 2.')
 
+        if not bound[0] <= value[0] <= value[1] <= bound[1]:
+            value = np.clip(value, bound[0], bound[1])
+            from mmengine.logging import MMLogger
+            logger = MMLogger.get_current_instance()
+            logger.warning(f'ColorJitter {name} values exceed the bound '
+                           f'{bound}, clipped to the bound.')
         # if value is 0 or (1., 1.) for brightness/contrast/saturation
         # or (0., 0.) for hue, do nothing
-        if value[0] == value[1] == center:
-            value = None
-        else:
-            value = tuple(value)
-
+        value = None if value[0] == value[1] == center else tuple(value)
         return value
 
     @cache_randomness
@@ -1111,10 +1104,7 @@ class Albumentations(BaseTransform):
         self.aug = albu_Compose(
             [self.albu_builder(t) for t in self.transforms])
 
-        if not keymap:
-            self.keymap_to_albu = dict(img='image')
-        else:
-            self.keymap_to_albu = keymap
+        self.keymap_to_albu = dict(img='image') if not keymap else keymap
         self.keymap_back = {v: k for k, v in self.keymap_to_albu.items()}
 
     def albu_builder(self, cfg: Dict):
@@ -1251,7 +1241,7 @@ class SimMIMMaskGenerator(BaseTransform):
         mask = mask.reshape((self.rand_size, self.rand_size))
         mask = mask.repeat(self.scale, axis=0).repeat(self.scale, axis=1)
 
-        results.update({'mask': mask})
+        results['mask'] = mask
 
         return results
 
@@ -1360,7 +1350,7 @@ class BEiTMaskGenerator(BaseTransform):
 
             delta = self._mask(mask, max_mask_patches)
             mask_count += delta
-        results.update({'mask': mask})
+        results['mask'] = mask
 
         return results
 
@@ -1424,17 +1414,13 @@ class RandomResizedCropAndInterpolationWithTwoPic(BaseTransform):
                  ratio=(3. / 4., 4. / 3.),
                  interpolation='bilinear',
                  second_interpolation='lanczos') -> None:
-        if isinstance(size, tuple):
-            self.size = size
-        else:
-            self.size = (size, size)
-        if second_size is not None:
-            if isinstance(second_size, tuple):
-                self.second_size = second_size
-            else:
-                self.second_size = (second_size, second_size)
-        else:
+        self.size = size if isinstance(size, tuple) else (size, size)
+        if second_size is None:
             self.second_size = None
+        elif isinstance(second_size, tuple):
+            self.second_size = second_size
+        else:
+            self.second_size = (second_size, second_size)
         if (scale[0] > scale[1]) or (ratio[0] > ratio[1]):
             ('range should be of kind (min, max)')
 
@@ -1514,14 +1500,14 @@ class RandomResizedCropAndInterpolationWithTwoPic(BaseTransform):
         if self.second_size is None:
             img = img[i:i + h, j:j + w]
             img = mmcv.imresize(img, self.size, interpolation=interpolation)
-            results.update({'img': img})
+            results['img'] = img
         else:
             img = img[i:i + h, j:j + w]
             img_sample = mmcv.imresize(
                 img, self.size, interpolation=interpolation)
             img_target = mmcv.imresize(
                 img, self.second_size, interpolation=self.second_interpolation)
-            results.update({'img': [img_sample, img_target]})
+            results['img'] = [img_sample, img_target]
         return results
 
     def __repr__(self) -> str:

@@ -118,14 +118,11 @@ class LearningRateDecayOptimWrapperConstructor(DefaultOptimWrapperConstructor):
 
                     param_group['weight_decay'] = base_wd * decay_mult
                     # add custom settings to param_group
-                    param_group.update(custom_cfg)
-                # norm decay
+                    param_group |= custom_cfg
                 elif is_norm and norm_decay_mult is not None:
                     param_group['weight_decay'] = base_wd * norm_decay_mult
-                # bias decay
                 elif name == 'bias' and bias_decay_mult is not None:
                     param_group['weight_decay'] = base_wd * bias_decay_mult
-                # flatten parameters decay
                 elif param.ndim == 1 and flat_decay_mult is not None:
                     param_group['weight_decay'] = base_wd * flat_decay_mult
                 else:
@@ -149,7 +146,7 @@ class LearningRateDecayOptimWrapperConstructor(DefaultOptimWrapperConstructor):
                 get_layer_depth=get_layer_depth,
             )
 
-        if prefix == '':
+        if not prefix:
             layer_params = defaultdict(list)
             for param in params:
                 layer_params[param['layer_id']].append(param)
@@ -160,7 +157,8 @@ class LearningRateDecayOptimWrapperConstructor(DefaultOptimWrapperConstructor):
                     f'layer {layer_id} params '
                     f'(lr={lr:.3g}, lr_scale={lr_scale:.3g}):'
                 ]
-                for param in layer_params:
-                    msg.append(f'\t{param["param_name"]}: '
-                               f'weight_decay={param["weight_decay"]:.3g}')
+                msg.extend(
+                    f'\t{param["param_name"]}: weight_decay={param["weight_decay"]:.3g}'
+                    for param in layer_params
+                )
                 logger.debug('\n'.join(msg))

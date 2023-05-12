@@ -115,7 +115,7 @@ class MaskFeatMaskGenerator3D(BaseTransform):
             else:
                 mask_count += delta
 
-        results.update({'mask': mask})
+        results['mask'] = mask
         return results
 
     def __repr__(self) -> str:

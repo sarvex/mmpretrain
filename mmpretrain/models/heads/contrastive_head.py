@@ -46,5 +46,4 @@ class ContrastiveHead(BaseModule):
         logits /= self.temperature
         labels = torch.zeros((N, ), dtype=torch.long).to(pos.device)
 
-        loss = self.loss_module(logits, labels)
-        return loss
+        return self.loss_module(logits, labels)

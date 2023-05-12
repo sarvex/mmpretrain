@@ -186,9 +186,7 @@ class ImageRetrievalInferencer(BaseInferencer):
         if test_pipeline_cfg[0]['type'] == 'LoadImageFromFile':
             # Image loading is finished in `self.preprocess`.
             test_pipeline_cfg = test_pipeline_cfg[1:]
-        test_pipeline = Compose(
-            [TRANSFORMS.build(t) for t in test_pipeline_cfg])
-        return test_pipeline
+        return Compose([TRANSFORMS.build(t) for t in test_pipeline_cfg])
 
     def preprocess(self, inputs: List[InputType], batch_size: int = 1):
 

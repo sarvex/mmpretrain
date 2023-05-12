@@ -49,10 +49,7 @@ def prompt(message,
         while out == '':
             out = ask()
 
-    if default is None and out == '':
-        return None
-    else:
-        return out.strip()
+    return None if default is None and out == '' else out.strip()
 
 
 class MyDumper(yaml.Dumper):
@@ -242,8 +239,8 @@ def fill_model_by_prompt(model: dict, defaults: dict):
             task = Prompt.ask(
                 'Please input the [red]test task[/]',
                 default='Image Classification')
+            metrics = {}
             if task == 'Image Classification':
-                metrics = {}
                 top1 = prompt('Please input the [red]top-1 accuracy[/]: ')
                 top5 = prompt('Please input the [red]top-5 accuracy[/]: ')
                 if top1 is not None:
@@ -255,11 +252,10 @@ def fill_model_by_prompt(model: dict, defaults: dict):
                     'Please input the [red]metrics[/] like "mAP=94.98" '
                     '(input empty to finish): ',
                     multiple=True)
-                metrics = {}
                 for metric in metrics_list:
                     k, v = metric.split('=')[:2]
                     metrics[k] = round(float(v), 2)
-            if len(metrics) > 0:
+            if metrics:
                 results = [{
                     'Dataset': test_dataset,
                     'Metrics': metrics,
@@ -278,9 +274,11 @@ def fill_model_by_prompt(model: dict, defaults: dict):
                 'Is the checkpoint is converted '
                 'from [red]other repository[/]?',
                 default=False):
-            converted_from = {}
-            converted_from['Weights'] = prompt(
-                'Please fill the original checkpoint download link: ')
+            converted_from = {
+                'Weights': prompt(
+                    'Please fill the original checkpoint download link: '
+                )
+            }
             converted_from['Code'] = Prompt.ask(
                 'Please fill the original repository link',
                 default=defaults.get('Convert From.Code', None))
@@ -408,10 +406,11 @@ def format_model(model: dict):
 
 
 def order_models(model):
-    order = []
-    order.append(int('Downstream' not in model))
-    order.append(int('3rdparty' in model['Name']))
-    order.append(model.get('Metadata', {}).get('Parameters', 0))
+    order = [
+        int('Downstream' not in model),
+        int('3rdparty' in model['Name']),
+        model.get('Metadata', {}).get('Parameters', 0),
+    ]
     order.append(model.get('Metadata', {}).get('FLOPs', 0))
     order.append(len(model['Name']))
 

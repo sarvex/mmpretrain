@@ -24,8 +24,7 @@ try:
             res_layer = getattr(self, f'layer{self.stage + 1}')
             norm = getattr(self, 'norm')
             x = res_layer(x)
-            out = norm(x)
-            return out
+            return norm(x)
 
 except ImportError:
     ResLayerExtraNorm = None

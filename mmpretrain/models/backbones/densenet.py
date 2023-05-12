@@ -49,17 +49,11 @@ class DenseLayer(BaseBackbone):
     def bottleneck_fn(self, xs):
         # type: (List[torch.Tensor]) -> torch.Tensor
         concated_features = torch.cat(xs, 1)
-        bottleneck_output = self.conv1(
-            self.act(self.norm1(concated_features)))  # noqa: T484
-        return bottleneck_output
+        return self.conv1(self.act(self.norm1(concated_features)))
 
     # todo: rewrite when torchscript supports any
     def any_requires_grad(self, x):
-        # type: (List[torch.Tensor]) -> bool
-        for tensor in x:
-            if tensor.requires_grad:
-                return True
-        return False
+        return any(tensor.requires_grad for tensor in x)
 
     # This decorator indicates to the compiler that a function or method
     # should be ignored and replaced with the raising of an exception.

@@ -93,10 +93,7 @@ class Bottle2neck(_Bottleneck):
             sp = self.relu(self.bns[0](sp))
             out = sp
             for i in range(1, self.scales - 1):
-                if self.stage_type == 'stage':
-                    sp = spx[i]
-                else:
-                    sp = sp + spx[i]
+                sp = spx[i] if self.stage_type == 'stage' else sp + spx[i]
                 sp = self.convs[i](sp.contiguous())
                 sp = self.relu(self.bns[i](sp))
                 out = torch.cat((out, sp), 1)
@@ -189,8 +186,7 @@ class Res2Layer(Sequential):
                     build_norm_layer(norm_cfg, out_channels)[1],
                 )
 
-        layers = []
-        layers.append(
+        layers = [
             block(
                 in_channels=in_channels,
                 out_channels=out_channels,
@@ -201,19 +197,23 @@ class Res2Layer(Sequential):
                 scales=scales,
                 base_width=base_width,
                 stage_type='stage',
-                **kwargs))
+                **kwargs
+            )
+        ]
         in_channels = out_channels
-        for _ in range(1, num_blocks):
-            layers.append(
-                block(
-                    in_channels=in_channels,
-                    out_channels=out_channels,
-                    stride=1,
-                    conv_cfg=conv_cfg,
-                    norm_cfg=norm_cfg,
-                    scales=scales,
-                    base_width=base_width,
-                    **kwargs))
+        layers.extend(
+            block(
+                in_channels=in_channels,
+                out_channels=out_channels,
+                stride=1,
+                conv_cfg=conv_cfg,
+                norm_cfg=norm_cfg,
+                scales=scales,
+                base_width=base_width,
+                **kwargs
+            )
+            for _ in range(1, num_blocks)
+        )
         super(Res2Layer, self).__init__(*layers)
 
 

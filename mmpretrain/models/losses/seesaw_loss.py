@@ -143,16 +143,16 @@ class SeesawLoss(nn.Module):
             torch.Tensor: The calculated loss
         """
         assert reduction_override in (None, 'none', 'mean', 'sum'), \
-            f'The `reduction_override` should be one of (None, "none", ' \
-            f'"mean", "sum"), but get "{reduction_override}".'
+                f'The `reduction_override` should be one of (None, "none", ' \
+                f'"mean", "sum"), but get "{reduction_override}".'
         assert cls_score.size(0) == labels.view(-1).size(0), \
-            f'Expected `labels` shape [{cls_score.size(0)}], ' \
-            f'but got {list(labels.size())}'
+                f'Expected `labels` shape [{cls_score.size(0)}], ' \
+                f'but got {list(labels.size())}'
         reduction = (
             reduction_override if reduction_override else self.reduction)
         assert cls_score.size(-1) == self.num_classes, \
-            f'The channel number of output ({cls_score.size(-1)}) does ' \
-            f'not match the `num_classes` of seesaw loss ({self.num_classes}).'
+                f'The channel number of output ({cls_score.size(-1)}) does ' \
+                f'not match the `num_classes` of seesaw loss ({self.num_classes}).'
 
         # accumulate the samples for each category
         unique_labels = labels.unique()
@@ -165,9 +165,15 @@ class SeesawLoss(nn.Module):
         else:
             weight = labels.new_ones(labels.size(), dtype=torch.float)
 
-        # calculate loss_cls_classes
-        loss_cls = self.loss_weight * self.cls_criterion(
-            cls_score, labels, weight, self.cum_samples, self.num_classes,
-            self.p, self.q, self.eps, reduction, avg_factor)
-
-        return loss_cls
+        return self.loss_weight * self.cls_criterion(
+            cls_score,
+            labels,
+            weight,
+            self.cum_samples,
+            self.num_classes,
+            self.p,
+            self.q,
+            self.eps,
+            reduction,
+            avg_factor,
+        )

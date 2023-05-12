@@ -112,10 +112,7 @@ class InvertedResidual(BaseModule):
 
             out = self.linear_conv(out)
 
-            if self.with_res_shortcut:
-                return x + self.drop_path(out)
-            else:
-                return out
+            return x + self.drop_path(out) if self.with_res_shortcut else out
 
         if self.with_cp and x.requires_grad:
             out = cp.checkpoint(_inner_forward, x)

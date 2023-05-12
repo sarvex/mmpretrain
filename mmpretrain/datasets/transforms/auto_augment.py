@@ -78,10 +78,10 @@ class AutoAugment(RandomChoice):
         super().__init__(transforms=transforms)
 
     def __repr__(self) -> str:
-        policies_str = ''
-        for sub in self.policies:
-            policies_str += '\n    ' + ', \t'.join([t['type'] for t in sub])
-
+        policies_str = ''.join(
+            '\n    ' + ', \t'.join([t['type'] for t in sub])
+            for sub in self.policies
+        )
         repr_str = self.__class__.__name__
         repr_str += f'(policies:{policies_str}\n)'
         return repr_str
@@ -242,14 +242,14 @@ class RandAugment(BaseTransform):
     def _check_policy(self, policy):
         """Check whether the sub-policy dict is available."""
         assert isinstance(policy, dict) and 'type' in policy, \
-            'Each policy must be a dict with key "type".'
-        type_name = policy['type']
-
+                'Each policy must be a dict with key "type".'
         if 'magnitude_range' in policy:
             magnitude_range = policy['magnitude_range']
+            type_name = policy['type']
+
             assert is_seq_of(magnitude_range, Number), \
-                f'`magnitude_range` of RandAugment policy {type_name} ' \
-                'should be a sequence with two numbers.'
+                    f'`magnitude_range` of RandAugment policy {type_name} ' \
+                    'should be a sequence with two numbers.'
 
     @cache_randomness
     def random_policy_indices(self) -> np.ndarray:
@@ -354,21 +354,17 @@ class BaseAugTransform(BaseTransform):
     @cache_randomness
     def random_negative(self, value):
         """Randomly negative the value."""
-        if np.random.rand() < self.random_negative_prob:
-            return -value
-        else:
-            return value
+        return -value if np.random.rand() < self.random_negative_prob else value
 
     def extra_repr(self):
         """Extra repr string when auto-generating magnitude is enabled."""
-        if self.magnitude_range is not None:
-            repr_str = f', magnitude_level={self.magnitude_level}, '
-            repr_str += f'magnitude_range={self.magnitude_range}, '
-            repr_str += f'magnitude_std={self.magnitude_std}, '
-            repr_str += f'total_level={self.total_level}, '
-            return repr_str
-        else:
+        if self.magnitude_range is None:
             return ''
+        repr_str = f', magnitude_level={self.magnitude_level}, '
+        repr_str += f'magnitude_range={self.magnitude_range}, '
+        repr_str += f'magnitude_std={self.magnitude_std}, '
+        repr_str += f'total_level={self.total_level}, '
+        return repr_str
 
 
 @TRANSFORMS.register_module()
@@ -404,16 +400,14 @@ class Shear(BaseAugTransform):
         super().__init__(
             prob=prob, random_negative_prob=random_negative_prob, **kwargs)
         assert (magnitude is None) ^ (self.magnitude_range is None), \
-            'Please specify only one of `magnitude` and `magnitude_range`.'
+                'Please specify only one of `magnitude` and `magnitude_range`.'
 
         self.magnitude = magnitude
-        if isinstance(pad_val, Sequence):
-            self.pad_val = tuple(pad_val)
-        else:
-            self.pad_val = pad_val
-
-        assert direction in ('horizontal', 'vertical'), 'direction must be ' \
-            f'either "horizontal" or "vertical", got "{direction}" instead.'
+        self.pad_val = tuple(pad_val) if isinstance(pad_val, Sequence) else pad_val
+        assert direction in {
+            'horizontal',
+            'vertical',
+        }, f'direction must be either "horizontal" or "vertical", got "{direction}" instead.'
         self.direction = direction
 
         self.interpolation = interpolation
@@ -485,16 +479,14 @@ class Translate(BaseAugTransform):
         super().__init__(
             prob=prob, random_negative_prob=random_negative_prob, **kwargs)
         assert (magnitude is None) ^ (self.magnitude_range is None), \
-            'Please specify only one of `magnitude` and `magnitude_range`.'
+                'Please specify only one of `magnitude` and `magnitude_range`.'
 
         self.magnitude = magnitude
-        if isinstance(pad_val, Sequence):
-            self.pad_val = tuple(pad_val)
-        else:
-            self.pad_val = pad_val
-
-        assert direction in ('horizontal', 'vertical'), 'direction must be ' \
-            f'either "horizontal" or "vertical", got "{direction}" instead.'
+        self.pad_val = tuple(pad_val) if isinstance(pad_val, Sequence) else pad_val
+        assert direction in {
+            'horizontal',
+            'vertical',
+        }, f'direction must be either "horizontal" or "vertical", got "{direction}" instead.'
         self.direction = direction
 
         self.interpolation = interpolation
@@ -573,16 +565,12 @@ class Rotate(BaseAugTransform):
         super().__init__(
             prob=prob, random_negative_prob=random_negative_prob, **kwargs)
         assert (angle is None) ^ (self.magnitude_range is None), \
-            'Please specify only one of `angle` and `magnitude_range`.'
+                'Please specify only one of `angle` and `magnitude_range`.'
 
         self.angle = angle
         self.center = center
         self.scale = scale
-        if isinstance(pad_val, Sequence):
-            self.pad_val = tuple(pad_val)
-        else:
-            self.pad_val = pad_val
-
+        self.pad_val = tuple(pad_val) if isinstance(pad_val, Sequence) else pad_val
         self.interpolation = interpolation
 
     def transform(self, results):
@@ -737,11 +725,7 @@ class Solarize(BaseAugTransform):
         if self.random_disable():
             return results
 
-        if self.thr is not None:
-            thr = self.thr
-        else:
-            thr = self.random_magnitude()
-
+        thr = self.thr if self.thr is not None else self.random_magnitude()
         img = results['img']
         img_solarized = mmcv.solarize(img, thr=thr)
         results['img'] = img_solarized.astype(img.dtype)
@@ -842,11 +826,7 @@ class Posterize(BaseAugTransform):
         if self.random_disable():
             return results
 
-        if self.bits is not None:
-            bits = self.bits
-        else:
-            bits = self.random_magnitude()
-
+        bits = self.bits if self.bits is not None else self.random_magnitude()
         # To align timm version, we need to round up to integer here.
         bits = ceil(bits)
 
@@ -1102,24 +1082,17 @@ class Cutout(BaseAugTransform):
                  **kwargs):
         super().__init__(prob=prob, random_negative_prob=0., **kwargs)
         assert (shape is None) ^ (self.magnitude_range is None), \
-            'Please specify only one of `shape` and `magnitude_range`.'
+                'Please specify only one of `shape` and `magnitude_range`.'
 
         self.shape = shape
-        if isinstance(pad_val, Sequence):
-            self.pad_val = tuple(pad_val)
-        else:
-            self.pad_val = pad_val
+        self.pad_val = tuple(pad_val) if isinstance(pad_val, Sequence) else pad_val
 
     def transform(self, results):
         """Apply transform to results."""
         if self.random_disable():
             return results
 
-        if self.shape is not None:
-            shape = self.shape
-        else:
-            shape = int(self.random_magnitude())
-
+        shape = self.shape if self.shape is not None else int(self.random_magnitude())
         img = results['img']
         img_cutout = mmcv.cutout(img, shape, pad_val=self.pad_val)
         results['img'] = img_cutout.astype(img.dtype)
@@ -1162,11 +1135,7 @@ class GaussianBlur(BaseAugTransform):
         if self.random_disable():
             return results
 
-        if self.radius is not None:
-            radius = self.radius
-        else:
-            radius = self.random_magnitude()
-
+        radius = self.radius if self.radius is not None else self.random_magnitude()
         img = results['img']
         pil_img = Image.fromarray(img)
         pil_img.filter(ImageFilter.GaussianBlur(radius=radius))

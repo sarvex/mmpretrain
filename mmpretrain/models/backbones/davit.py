@@ -84,10 +84,7 @@ class DaViTWindowMSA(BaseModule):
             attn = attn.view(B_ // nW, nW, self.num_heads, N,
                              N) + mask.unsqueeze(1).unsqueeze(0)
             attn = attn.view(-1, self.num_heads, N, N)
-            attn = self.softmax(attn)
-        else:
-            attn = self.softmax(attn)
-
+        attn = self.softmax(attn)
         attn = self.attn_drop(attn)
 
         x = (attn @ v).transpose(1, 2).reshape(B_, N, C)
@@ -597,10 +594,7 @@ class DaViTBlockSequence(BaseModule):
 
     @property
     def out_channels(self):
-        if self.downsample:
-            return self.downsample.out_channels
-        else:
-            return self.embed_dims
+        return self.downsample.out_channels if self.downsample else self.embed_dims
 
 
 @MODELS.register_module()
@@ -714,12 +708,12 @@ class DaViT(BaseBackbone):
         if isinstance(arch, str):
             arch = arch.lower()
             assert arch in set(self.arch_zoo), \
-                f'Arch {arch} is not in default archs {set(self.arch_zoo)}'
+                    f'Arch {arch} is not in default archs {set(self.arch_zoo)}'
             self.arch_settings = self.arch_zoo[arch]
         else:
             essential_keys = {'embed_dims', 'depths', 'num_heads'}
             assert isinstance(arch, dict) and essential_keys <= set(arch), \
-                f'Custom arch needs a dict with keys {essential_keys}'
+                    f'Custom arch needs a dict with keys {essential_keys}'
             self.arch_settings = arch
 
         self.embed_dims = self.arch_settings['embed_dims']
@@ -756,7 +750,7 @@ class DaViT(BaseBackbone):
                 stage_cfg = stage_cfgs[i]
             else:
                 stage_cfg = deepcopy(stage_cfgs)
-            downsample = True if i < self.num_layers - 1 else False
+            downsample = i < self.num_layers - 1
             _stage_cfg = {
                 'embed_dims': embed_dims[-1],
                 'depth': depth,

@@ -193,10 +193,10 @@ class DenseCL(BaseSelfSupervisor):
         loss_single = self.head.loss(l_pos, l_neg)
         loss_dense = self.head.loss(l_pos_dense, l_neg_dense)
 
-        losses = dict()
-        losses['loss_single'] = loss_single * (1 - self.loss_lambda)
-        losses['loss_dense'] = loss_dense * self.loss_lambda
-
+        losses = {
+            'loss_single': loss_single * (1 - self.loss_lambda),
+            'loss_dense': loss_dense * self.loss_lambda,
+        }
         self._dequeue_and_enqueue(k)
         self._dequeue_and_enqueue2(k2)
 

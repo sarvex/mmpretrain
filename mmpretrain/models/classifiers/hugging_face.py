@@ -139,9 +139,7 @@ class HuggingFaceClassifier(BaseClassifier):
         # The part can be traced by torch.fx
         cls_score = self.model(inputs).logits
 
-        # The part can not be traced by torch.fx
-        losses = self._get_loss(cls_score, data_samples, **kwargs)
-        return losses
+        return self._get_loss(cls_score, data_samples, **kwargs)
 
     def _get_loss(self, cls_score: torch.Tensor,
                   data_samples: List[DataSample], **kwargs):
@@ -153,13 +151,9 @@ class HuggingFaceClassifier(BaseClassifier):
         else:
             target = torch.cat([i.gt_label for i in data_samples])
 
-        # compute loss
-        losses = dict()
         loss = self.loss_module(
             cls_score, target, avg_factor=cls_score.size(0), **kwargs)
-        losses['loss'] = loss
-
-        return losses
+        return {'loss': loss}
 
     def predict(self,
                 inputs: torch.Tensor,
@@ -178,9 +172,7 @@ class HuggingFaceClassifier(BaseClassifier):
         # The part can be traced by torch.fx
         cls_score = self.model(inputs).logits
 
-        # The part can not be traced by torch.fx
-        predictions = self._get_predictions(cls_score, data_samples)
-        return predictions
+        return self._get_predictions(cls_score, data_samples)
 
     def _get_predictions(self, cls_score, data_samples):
         """Post-process the output of head.
@@ -195,11 +187,10 @@ class HuggingFaceClassifier(BaseClassifier):
                                                  pred_labels):
                 data_sample.set_pred_score(score).set_pred_label(label)
         else:
-            data_samples = []
-            for score, label in zip(pred_scores, pred_labels):
-                data_samples.append(
-                    DataSample().set_pred_score(score).set_pred_label(label))
-
+            data_samples = [
+                DataSample().set_pred_score(score).set_pred_label(label)
+                for score, label in zip(pred_scores, pred_labels)
+            ]
         return data_samples
 
     @staticmethod
@@ -213,7 +204,7 @@ class HuggingFaceClassifier(BaseClassifier):
     @staticmethod
     def _add_state_dict_prefix(state_dict, prefix, local_metadata, strict,
                                missing_keys, unexpected_keys, error_msgs):
-        new_prefix = prefix + 'model.'
+        new_prefix = f'{prefix}model.'
         for k in list(state_dict.keys()):
             new_key = re.sub(f'^{prefix}', new_prefix, k)
             state_dict[new_key] = state_dict[k]

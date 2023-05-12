@@ -107,7 +107,7 @@ class LARS(Optimizer):
                     if weight_norm != 0 and grad_norm != 0:
                         # Compute local learning rate for this layer
                         local_lr = eta * weight_norm / \
-                            (grad_norm + weight_decay * weight_norm + self.eps)
+                                (grad_norm + weight_decay * weight_norm + self.eps)
                     else:
                         local_lr = 1.
 
@@ -117,14 +117,11 @@ class LARS(Optimizer):
                     param_state = self.state[p]
                     if 'momentum_buffer' not in param_state:
                         buf = param_state['momentum_buffer'] = \
-                                torch.clone(d_p).detach()
+                                    torch.clone(d_p).detach()
                     else:
                         buf = param_state['momentum_buffer']
                         buf.mul_(momentum).add_(d_p, alpha=1 - dampening)
-                    if nesterov:
-                        d_p = d_p.add(buf, alpha=momentum)
-                    else:
-                        d_p = buf
+                    d_p = d_p.add(buf, alpha=momentum) if nesterov else buf
                 p.add_(-d_p)
 
         return loss

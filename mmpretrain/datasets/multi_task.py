@@ -12,10 +12,7 @@ from .builder import DATASETS
 
 
 def expanduser(path):
-    if isinstance(path, (str, PathLike)):
-        return osp.expanduser(path)
-    else:
-        return path
+    return osp.expanduser(path) if isinstance(path, (str, PathLike)) else path
 
 
 def isabs(uri):
@@ -182,8 +179,7 @@ class MultiTaskDataset:
         if isabs(path):
             return path
 
-        joined_path = self.file_backend.join_path(self.data_root, path)
-        return joined_path
+        return self.file_backend.join_path(self.data_root, path)
 
     @classmethod
     def _get_meta_info(cls, in_metainfo: dict = None) -> dict:
@@ -256,14 +252,13 @@ class MultiTaskDataset:
             dict: Parsed annotation.
         """
         assert isinstance(raw_data, dict), \
-            f'The item should be a dict, but got {type(raw_data)}'
+                f'The item should be a dict, but got {type(raw_data)}'
         assert 'img_path' in raw_data, \
-            "The item doesn't have `img_path` field."
-        data = dict(
+                "The item doesn't have `img_path` field."
+        return dict(
             img_path=self._join_root(raw_data['img_path']),
             gt_label=raw_data['gt_label'],
         )
-        return data
 
     @property
     def metainfo(self) -> dict:
@@ -314,7 +309,7 @@ class MultiTaskDataset:
         Returns:
             str: Formatted string.
         """
-        head = 'Dataset ' + self.__class__.__name__
+        head = f'Dataset {self.__class__.__name__}'
         body = [f'Number of samples: \t{self.__len__()}']
         if self.data_root is not None:
             body.append(f'Root location: \t{self.data_root}')
@@ -324,14 +319,11 @@ class MultiTaskDataset:
         # -------------------- extra repr --------------------
         tasks = self.metainfo['tasks']
         body.append(f'For {len(tasks)} tasks')
-        for task in tasks:
-            body.append(f' {task} ')
+        body.extend(f' {task} ' for task in tasks)
         # ----------------------------------------------------
 
         if len(self.pipeline.transforms) > 0:
             body.append('With transforms:')
-            for t in self.pipeline.transforms:
-                body.append(f'    {t}')
-
+            body.extend(f'    {t}' for t in self.pipeline.transforms)
         lines = [head] + [' ' * 4 + line for line in body]
         return '\n'.join(lines)

@@ -35,8 +35,7 @@ def parse_args():
         type=float,
         help='The threshold of p-value. '
         'Higher threshold means more strict test.')
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def compare_distribution(state_dict_a, state_dict_b, p_thres):

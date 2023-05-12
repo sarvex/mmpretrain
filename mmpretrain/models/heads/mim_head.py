@@ -33,5 +33,4 @@ class MIMHead(BaseModule):
         Returns:
             torch.Tensor: The loss tensor.
         """
-        loss = self.loss_module(pred, target, mask)
-        return loss
+        return self.loss_module(pred, target, mask)

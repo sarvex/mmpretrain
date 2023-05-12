@@ -189,9 +189,7 @@ def basic_blocks(dim,
                 drop_path=block_dpr,
                 layer_scale_init_value=layer_scale_init_value,
             ))
-    blocks = nn.Sequential(*blocks)
-
-    return blocks
+    return nn.Sequential(*blocks)
 
 
 @MODELS.register_module()

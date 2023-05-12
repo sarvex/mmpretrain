@@ -36,7 +36,7 @@ class DenseCLNeck(BaseModule):
             nn.Linear(in_channels, hid_channels), nn.ReLU(inplace=True),
             nn.Linear(hid_channels, out_channels))
 
-        self.with_pool = True if num_grid is not None else False
+        self.with_pool = num_grid is not None
         if self.with_pool:
             self.pool = nn.AdaptiveAvgPool2d((num_grid, num_grid))
         self.mlp2 = nn.Sequential(

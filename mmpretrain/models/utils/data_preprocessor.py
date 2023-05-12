@@ -337,12 +337,14 @@ class TwoNormDataPreprocessor(SelfSupDataPreprocessor):
         assert (second_mean is not None) and (second_std is not None), (
             'mean and std should not be None while using '
             '`TwoNormDataPreprocessor`')
-        assert len(second_mean) == 3 or len(second_mean) == 1, (
-            '`mean` should have 1 or 3 values, to be compatible with '
-            f'RGB or gray image, but got {len(second_mean)} values')
-        assert len(second_std) == 3 or len(second_std) == 1, (
-            '`std` should have 1 or 3 values, to be compatible with RGB '
-            f'or gray image, but got {len(std)} values')
+        assert len(second_mean) in {
+            3,
+            1,
+        }, f'`mean` should have 1 or 3 values, to be compatible with RGB or gray image, but got {len(second_mean)} values'
+        assert len(second_std) in {
+            3,
+            1,
+        }, f'`std` should have 1 or 3 values, to be compatible with RGB or gray image, but got {len(std)} values'
 
         self.register_buffer('second_mean',
                              torch.tensor(second_mean).view(-1, 1, 1), False)

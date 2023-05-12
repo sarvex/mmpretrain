@@ -53,12 +53,10 @@ class DeiTClsHead(VisionTransformerClsHead):
             _, cls_token, dist_token = feat
         else:
             cls_token, dist_token = feat
-        if self.hidden_dim is None:
-            return cls_token, dist_token
-        else:
+        if self.hidden_dim is not None:
             cls_token = self.layers.act(self.layers.pre_logits(cls_token))
             dist_token = self.layers.act(self.layers.pre_logits(dist_token))
-            return cls_token, dist_token
+        return cls_token, dist_token
 
     def forward(self, feats: Tuple[List[torch.Tensor]]) -> torch.Tensor:
         """The forward process."""
@@ -66,7 +64,6 @@ class DeiTClsHead(VisionTransformerClsHead):
             warnings.warn('MMPretrain cannot train the '
                           'distilled version DeiT.')
         cls_token, dist_token = self.pre_logits(feats)
-        # The final classification head.
-        cls_score = (self.layers.head(cls_token) +
-                     self.layers.head_dist(dist_token)) / 2
-        return cls_score
+        return (
+            self.layers.head(cls_token) + self.layers.head_dist(dist_token)
+        ) / 2

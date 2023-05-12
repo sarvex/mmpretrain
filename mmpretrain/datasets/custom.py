@@ -28,14 +28,14 @@ def find_folders(
     """
     # Pre-build file backend to prevent verbose file backend inference.
     backend = backend or get_file_backend(root, enable_singleton=True)
-    folders = list(
+    folders = sorted(
         backend.list_dir_or_file(
             root,
             list_dir=True,
             list_file=False,
             recursive=False,
-        ))
-    folders.sort()
+        )
+    )
     folder_to_idx = {folders[i]: i for i in range(len(folders))}
     return folders, folder_to_idx
 
@@ -198,10 +198,10 @@ class CustomDataset(BaseDataset):
                  lazy_init: bool = False,
                  **kwargs):
         assert (ann_file or data_prefix or data_root), \
-            'One of `ann_file`, `data_root` and `data_prefix` must '\
-            'be specified.'
+                'One of `ann_file`, `data_root` and `data_prefix` must '\
+                'be specified.'
 
-        self.extensions = tuple(set([i.lower() for i in extensions]))
+        self.extensions = tuple({i.lower() for i in extensions})
         self.with_label = with_label
 
         super().__init__(

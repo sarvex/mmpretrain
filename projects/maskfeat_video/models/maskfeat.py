@@ -50,10 +50,8 @@ class VideoMaskFeat(BaseSelfSupervisor):
 
         mask = self._get_output_mask(mask)
         loss = self.head(pred, hog, mask)
-        losses = dict(loss=loss)
-        return losses
+        return dict(loss=loss)
 
     def _get_output_mask(self, mask: torch.Tensor) -> torch.Tensor:
         size = self.backbone.out_patch_resolution[-1][-1]
-        output_mask = F.interpolate(mask.float(), size=size)
-        return output_mask
+        return F.interpolate(mask.float(), size=size)

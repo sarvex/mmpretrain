@@ -109,13 +109,13 @@ class ImageClassifier(BaseClassifier):
               :obj:`mmpretrain.structures.DataSample`.
             - If ``mode="loss"``, return a dict of tensor.
         """
-        if mode == 'tensor':
-            feats = self.extract_feat(inputs)
-            return self.head(feats) if self.with_head else feats
-        elif mode == 'loss':
+        if mode == 'loss':
             return self.loss(inputs, data_samples)
         elif mode == 'predict':
             return self.predict(inputs, data_samples)
+        elif mode == 'tensor':
+            feats = self.extract_feat(inputs)
+            return self.head(feats) if self.with_head else feats
         else:
             raise RuntimeError(f'Invalid mode "{mode}".')
 

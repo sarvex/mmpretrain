@@ -48,18 +48,14 @@ class NormProduct(nn.Linear):
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         if self.feature_norm:
             input = F.normalize(input)
-        if self.weight_norm:
-            weight = F.normalize(self.weight)
-        else:
-            weight = self.weight
+        weight = F.normalize(self.weight) if self.weight_norm else self.weight
         cosine_all = F.linear(input, weight, self.bias)
 
         if self.k == 1:
             return cosine_all
-        else:
-            cosine_all = cosine_all.view(-1, self.out_features, self.k)
-            cosine, _ = torch.max(cosine_all, dim=2)
-            return cosine
+        cosine_all = cosine_all.view(-1, self.out_features, self.k)
+        cosine, _ = torch.max(cosine_all, dim=2)
+        return cosine
 
 
 @MODELS.register_module()
@@ -227,7 +223,7 @@ class ArcFaceClsHead(ClsHead):
         """
         assert target.dim() == 1 or (
             target.dim() == 2 and target.shape[1] == 1), \
-            'The target must be in index format.'
+                'The target must be in index format.'
         cosine = self.norm_product(pre_logits)
         phi = torch.cos(torch.acos(cosine) + self.margins)
 
@@ -242,8 +238,7 @@ class ArcFaceClsHead(ClsHead):
                               cosine - self.sinm_m)
 
         target = convert_to_one_hot(target, self.num_classes)
-        output = target * phi + (1 - target) * cosine
-        return output
+        return target * phi + (1 - target) * cosine
 
     def forward(self,
                 feats: Tuple[torch.Tensor],
@@ -291,10 +286,6 @@ class ArcFaceClsHead(ClsHead):
         # the index format target would be used
         cls_score = self(feats, label_target)
 
-        # compute loss
-        losses = dict()
         loss = self.loss_module(
             cls_score, target, avg_factor=cls_score.size(0), **kwargs)
-        losses['loss'] = loss
-
-        return losses
+        return {'loss': loss}

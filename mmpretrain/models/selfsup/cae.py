@@ -329,33 +329,32 @@ class CAEPretrainViT(BEiTViT):
         if mask is None:
             return super().forward(x)
 
-        else:
-            x, _ = self.patch_embed(x)
-            batch_size, _, dim = x.size()
+        x, _ = self.patch_embed(x)
+        batch_size, _, dim = x.size()
 
-            cls_tokens = self.cls_token.expand(batch_size, -1, -1)
+        cls_tokens = self.cls_token.expand(batch_size, -1, -1)
 
-            # NOTE: unmasked embeddings
-            x_unmasked = x[~mask].reshape(batch_size, -1, dim)
-            x_unmasked = torch.cat((cls_tokens, x_unmasked), dim=1)
+        # NOTE: unmasked embeddings
+        x_unmasked = x[~mask].reshape(batch_size, -1, dim)
+        x_unmasked = torch.cat((cls_tokens, x_unmasked), dim=1)
 
-            pos_embed = self.pos_embed.expand(batch_size, self.num_patches + 1,
-                                              dim)
-            pos_embed_unmasked = pos_embed[:, 1:][~mask].reshape(
-                batch_size, -1, dim)
-            pos_embed_unmasked = torch.cat(
-                (pos_embed[:, :1], pos_embed_unmasked), dim=1)
-            x_unmasked = x_unmasked + pos_embed_unmasked
+        pos_embed = self.pos_embed.expand(batch_size, self.num_patches + 1,
+                                          dim)
+        pos_embed_unmasked = pos_embed[:, 1:][~mask].reshape(
+            batch_size, -1, dim)
+        pos_embed_unmasked = torch.cat(
+            (pos_embed[:, :1], pos_embed_unmasked), dim=1)
+        x_unmasked = x_unmasked + pos_embed_unmasked
 
-            x_unmasked = self.drop_after_pos(x_unmasked)
+        x_unmasked = self.drop_after_pos(x_unmasked)
 
-            for i, layer in enumerate(self.layers):
-                x_unmasked = layer(x=x_unmasked, rel_pos_bias=None)
+        for i, layer in enumerate(self.layers):
+            x_unmasked = layer(x=x_unmasked, rel_pos_bias=None)
 
-                if i == len(self.layers) - 1 and self.final_norm:
-                    x_unmasked = self.norm1(x_unmasked)
+            if i == len(self.layers) - 1 and self.final_norm:
+                x_unmasked = self.norm1(x_unmasked)
 
-            return x_unmasked
+        return x_unmasked
 
 
 @MODELS.register_module()
@@ -464,9 +463,4 @@ class CAE(BaseSelfSupervisor):
         loss_main, loss_align = self.head.loss(logits, logits_target,
                                                latent_pred, latent_target,
                                                mask)
-        losses = dict()
-
-        losses['loss'] = loss_main + loss_align
-        losses['main'] = loss_main
-        losses['align'] = loss_align
-        return losses
+        return {'loss': loss_main + loss_align, 'main': loss_main, 'align': loss_align}

@@ -10,8 +10,8 @@ vqkd_encoder = dict(
     patch_size=16,
     in_channels=3,
     out_indices=-1,
-    drop_rate=0.,
-    drop_path_rate=0.,
+    drop_rate=0.0,
+    drop_path_rate=0.0,
     norm_cfg=dict(type='LN', eps=1e-6),
     final_norm=True,
     out_type='featmap',
@@ -20,11 +20,12 @@ vqkd_encoder = dict(
     use_abs_pos_emb=True,
     use_rel_pos_bias=False,
     use_shared_rel_pos_bias=False,
-    layer_scale_init_value=0.,
+    layer_scale_init_value=0.0,
     interpolate_mode='bicubic',
-    patch_cfg=dict(),
-    layer_cfgs=dict(),
-    init_cfg=None)
+    patch_cfg={},
+    layer_cfgs={},
+    init_cfg=None,
+)
 
 layer_scale_init_value = 0.1
 drop_path_rate = 0.  # 0. for 300 epochs and 0.1 for 1600 epochs.

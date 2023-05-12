@@ -244,14 +244,14 @@ class VisionTransformer(BaseBackbone):
         if isinstance(arch, str):
             arch = arch.lower()
             assert arch in set(self.arch_zoo), \
-                f'Arch {arch} is not in default archs {set(self.arch_zoo)}'
+                    f'Arch {arch} is not in default archs {set(self.arch_zoo)}'
             self.arch_settings = self.arch_zoo[arch]
         else:
             essential_keys = {
                 'embed_dims', 'num_layers', 'num_heads', 'feedforward_channels'
             }
             assert isinstance(arch, dict) and essential_keys <= set(arch), \
-                f'Custom arch needs a dict with keys {essential_keys}'
+                    f'Custom arch needs a dict with keys {essential_keys}'
             self.arch_settings = arch
 
         self.embed_dims = self.arch_settings['embed_dims']
@@ -268,7 +268,7 @@ class VisionTransformer(BaseBackbone):
             stride=patch_size,
             bias=not pre_norm,  # disable bias if pre_norm is used(e.g., CLIP)
         )
-        _patch_cfg.update(patch_cfg)
+        _patch_cfg |= patch_cfg
         self.patch_embed = PatchEmbed(**_patch_cfg)
         self.patch_resolution = self.patch_embed.init_out_size
         num_patches = self.patch_resolution[0] * self.patch_resolution[1]
@@ -301,13 +301,13 @@ class VisionTransformer(BaseBackbone):
         if isinstance(out_indices, int):
             out_indices = [out_indices]
         assert isinstance(out_indices, Sequence), \
-            f'"out_indices" must by a sequence or int, ' \
-            f'get {type(out_indices)} instead.'
+                f'"out_indices" must by a sequence or int, ' \
+                f'get {type(out_indices)} instead.'
         for i, index in enumerate(out_indices):
             if index < 0:
                 out_indices[i] = self.num_layers + index
             assert 0 <= out_indices[i] <= self.num_layers, \
-                f'Invalid out_indices {index}'
+                    f'Invalid out_indices {index}'
         self.out_indices = out_indices
 
         # stochastic depth decay rule
@@ -326,7 +326,7 @@ class VisionTransformer(BaseBackbone):
                 drop_path_rate=dpr[i],
                 qkv_bias=qkv_bias,
                 norm_cfg=norm_cfg)
-            _layer_cfg.update(layer_cfgs[i])
+            _layer_cfg |= layer_cfgs[i]
             self.layers.append(TransformerEncoderLayer(**_layer_cfg))
 
         self.frozen_stages = frozen_stages
@@ -356,13 +356,17 @@ class VisionTransformer(BaseBackbone):
     def init_weights(self):
         super(VisionTransformer, self).init_weights()
 
-        if not (isinstance(self.init_cfg, dict)
-                and self.init_cfg['type'] == 'Pretrained'):
-            if self.pos_embed is not None:
-                trunc_normal_(self.pos_embed, std=0.02)
+        if (
+            not (
+                isinstance(self.init_cfg, dict)
+                and self.init_cfg['type'] == 'Pretrained'
+            )
+            and self.pos_embed is not None
+        ):
+            trunc_normal_(self.pos_embed, std=0.02)
 
     def _prepare_pos_embed(self, state_dict, prefix, *args, **kwargs):
-        name = prefix + 'pos_embed'
+        name = f'{prefix}pos_embed'
         if name not in state_dict.keys():
             return
 

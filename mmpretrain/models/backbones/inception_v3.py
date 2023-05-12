@@ -478,10 +478,7 @@ class InceptionV3(BaseBackbone):
         x = self.Mixed_6d(x)
         # N x 768 x 17 x 17
         x = self.Mixed_6e(x)
-        # N x 768 x 17 x 17
-        aux: Optional[torch.Tensor] = None
-        if self.aux_logits and self.training:
-            aux = self.AuxLogits(x)
+        aux = self.AuxLogits(x) if self.aux_logits and self.training else None
         # N x 768 x 17 x 17
         x = self.Mixed_7a(x)
         # N x 1280 x 8 x 8

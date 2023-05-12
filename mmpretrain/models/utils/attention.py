@@ -144,10 +144,7 @@ class WindowMSA(BaseModule):
             attn = attn.view(B_ // nW, nW, self.num_heads, N,
                              N) + mask.unsqueeze(1).unsqueeze(0)
             attn = attn.view(-1, self.num_heads, N, N)
-            attn = self.softmax(attn)
-        else:
-            attn = self.softmax(attn)
-
+        attn = self.softmax(attn)
         attn = self.attn_drop(attn)
 
         x = (attn @ v).transpose(1, 2).reshape(B_, N, C)
@@ -322,10 +319,7 @@ class WindowMSAV2(BaseModule):
             attn = attn.view(B_ // nW, nW, self.num_heads, N,
                              N) + mask.unsqueeze(1).unsqueeze(0)
             attn = attn.view(-1, self.num_heads, N, N)
-            attn = self.softmax(attn)
-        else:
-            attn = self.softmax(attn)
-
+        attn = self.softmax(attn)
         attn = self.attn_drop(attn)
 
         x = (attn @ v).transpose(1, 2).reshape(B_, N, C)
@@ -567,10 +561,7 @@ class MultiheadAttention(BaseModule):
 
         self.out_drop = build_dropout(dropout_layer)
 
-        if use_layer_scale:
-            self.gamma1 = LayerScale(embed_dims)
-        else:
-            self.gamma1 = nn.Identity()
+        self.gamma1 = LayerScale(embed_dims) if use_layer_scale else nn.Identity()
 
     def forward(self, x):
         B, N, _ = x.shape
